@@ -7,26 +7,34 @@ This repository contains assignments and projects for CS 614 - Applications of M
 - **HW1.ipynb**: Programming Assignment 1
 - **HW2.ipynb**: Programming Assignment 2 - CNN for MNIST digit classification
 
-## Setup Instructions
+## Quick Start
 
 ### Prerequisites
 
+- [Make](https://www.gnu.org/software/make/) installed
+  - **Linux/Mac**: Usually pre-installed. If not: `sudo apt-get install make` (Linux) or `xcode-select --install` (Mac)
+  - **Windows**: Install via [Chocolatey](https://chocolatey.org/) (`choco install make`) or [GnuWin32](http://gnuwin32.sourceforge.net/packages/make.htm)
 - [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution) installed
 - Git installed
 
 ### Environment Setup
 
-#### For Linux/Mac:
+**Easy way (auto-detects OS):**
 
 ```bash
-bash setup_environment.sh
+make setup
 ```
 
-#### For Windows (PowerShell):
+This will:
+- Auto-detect your operating system (Linux/Mac/Windows)
+- Run the appropriate setup script
+- Check for required tools (conda, Python)
+- Guide you through GPU selection if needed
 
-```powershell
-.\setup_environment.ps1
-```
+**Manual way:**
+
+- **Linux/Mac**: `bash scripts/setup_environment.sh`
+- **Windows**: `powershell -ExecutionPolicy Bypass -File scripts/setup_environment.ps1`
 
 This will:
 1. Create a conda environment named `cs614` with Python 3.13
@@ -57,8 +65,12 @@ conda activate cs614
 After setup, check if your GPU is detected:
 
 ```bash
+# Using Makefile (recommended)
+make check-gpu
+
+# Or manually
 conda activate cs614
-python check_gpu.py
+python scripts/check_gpu.py
 ```
 
 This script will show:
@@ -112,13 +124,16 @@ For AMD GPUs, you may need to install PyTorch with ROCm manually:
 
 ```
 CS614/
-├── .gitignore              # Git ignore file (excludes data files)
-├── setup_environment.sh    # Environment setup script (Linux/Mac)
-├── setup_environment.ps1   # Environment setup script (Windows)
-├── check_gpu.py            # GPU detection script
+├── Makefile                # Main Makefile for all commands
+├── LICENSE                 # MIT License
 ├── README.md               # This file
+├── .gitignore              # Git ignore file (excludes data files)
 ├── HW1.ipynb               # Assignment 1
 ├── HW2.ipynb               # Assignment 2
+├── scripts/                # Setup and utility scripts
+│   ├── setup_environment.sh    # Environment setup (Linux/Mac)
+│   ├── setup_environment.ps1   # Environment setup (Windows)
+│   └── check_gpu.py             # GPU detection script
 └── data/                   # Data directory (gitignored)
 ```
 
@@ -138,21 +153,29 @@ CS614/
 
 3. **Push your code:**
    ```bash
-   # Option 1: Using Makefile (recommended)
+   # Using Makefile (recommended)
    make push                    # Uses default message
    make push MESSAGE="Your commit message here"
    
-   # Option 2: Use the helper script
-   ./push_to_github.sh <your-github-username>
-   
-   # Option 3: Manual commands
+   # Or manually
    git add -A
    git commit -m "Your message"
    git push origin main
    ```
 
+## Available Make Commands
+
+```bash
+make setup              # Set up conda environment (auto-detects OS)
+make check-gpu          # Check GPU availability
+make push               # Commit and push to GitHub (default message)
+make push MESSAGE="msg" # Commit and push with custom message
+make help               # Show all available commands
+```
+
 ## Notes
 
 - The `data/` directory is excluded from git to avoid committing large data files
 - Model checkpoints and temporary files are also excluded
-- Make sure to run the setup script before working on assignments
+- Run `make setup` before working on assignments
+- All scripts are organized in the `scripts/` folder for a clean root directory
