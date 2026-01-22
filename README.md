@@ -77,15 +77,24 @@ CS614/
    - **DO NOT** initialize with README, .gitignore, or license (we already have these)
    - Click "Create repository"
 
-2. **Push your code:**
+2. **Set up the remote (first time only):**
    ```bash
-   # Option 1: Use the helper script
+   git remote add origin https://github.com/<your-username>/CS-614---Application-of-ML-AI.git
+   ```
+
+3. **Push your code:**
+   ```bash
+   # Option 1: Using Makefile (recommended)
+   make push                    # Uses default message
+   make push MESSAGE="Your commit message here"
+   
+   # Option 2: Use the helper script
    ./push_to_github.sh <your-github-username>
    
-   # Option 2: Manual commands
-   git remote add origin https://github.com/<your-username>/CS-614---Application-of-ML-AI.git
-   git branch -M main
-   git push -u origin main
+   # Option 3: Manual commands
+   git add -A
+   git commit -m "Your message"
+   git push origin main
    ```
 
 ## Notes
