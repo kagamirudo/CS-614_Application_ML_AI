@@ -68,6 +68,26 @@ CS614/
 └── data/                   # Data directory (gitignored)
 ```
 
+## Pushing to GitHub
+
+1. **Create the repository on GitHub:**
+   - Go to https://github.com/new
+   - Repository name: `CS 614 - Application of ML/AI` (or `CS-614---Application-of-ML-AI` if spaces cause issues)
+   - Choose private or public
+   - **DO NOT** initialize with README, .gitignore, or license (we already have these)
+   - Click "Create repository"
+
+2. **Push your code:**
+   ```bash
+   # Option 1: Use the helper script
+   ./push_to_github.sh <your-github-username>
+   
+   # Option 2: Manual commands
+   git remote add origin https://github.com/<your-username>/CS-614---Application-of-ML-AI.git
+   git branch -M main
+   git push -u origin main
+   ```
+
 ## Notes
 
 - The `data/` directory is excluded from git to avoid committing large data files
