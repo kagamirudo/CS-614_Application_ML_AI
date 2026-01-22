@@ -30,8 +30,12 @@ bash setup_environment.sh
 
 This will:
 1. Create a conda environment named `cs614` with Python 3.13
-2. Install all required packages:
-   - PyTorch
+2. Ask you to select GPU support:
+   - **CPU only** (default, works everywhere)
+   - **NVIDIA GPU** (CUDA)
+   - **AMD GPU** (ROCm)
+3. Install all required packages:
+   - PyTorch (with appropriate GPU support if selected)
    - torchvision
    - matplotlib
    - numpy
@@ -44,6 +48,55 @@ After setup, activate the environment:
 
 ```bash
 conda activate cs614
+```
+
+### GPU Support
+
+#### Checking GPU Availability
+
+After setup, check if your GPU is detected:
+
+```bash
+conda activate cs614
+python check_gpu.py
+```
+
+This script will show:
+- PyTorch version
+- CUDA (NVIDIA) availability and GPU info
+- ROCm (AMD) availability and GPU info
+- Device recommendations
+
+#### Using GPU in Your Code
+
+If GPU is available, you can use it in your notebooks:
+
+```python
+import torch
+
+# Check if CUDA is available
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f'Using device: {device}')
+
+# Move tensors/models to GPU
+model = model.to(device)
+images = images.to(device)
+```
+
+#### AMD GPU (ROCm) Notes
+
+- **Linux**: ROCm support is available. Check [PyTorch ROCm compatibility](https://pytorch.org/get-started/locally/) for your GPU model.
+- **Windows**: ROCm is not officially supported on Windows. Options:
+  - Use CPU version (slower but works)
+  - Use WSL2 with ROCm support
+  - Check for community builds or alternative solutions
+
+For AMD GPUs, you may need to install PyTorch with ROCm manually:
+```bash
+# Visit https://pytorch.org/get-started/locally/ and select:
+# - OS: Linux
+# - Package: Pip
+# - Compute Platform: ROCm (select your ROCm version)
 ```
 
 ### Running the Notebooks
@@ -62,6 +115,7 @@ CS614/
 ├── .gitignore              # Git ignore file (excludes data files)
 ├── setup_environment.sh    # Environment setup script (Linux/Mac)
 ├── setup_environment.ps1   # Environment setup script (Windows)
+├── check_gpu.py            # GPU detection script
 ├── README.md               # This file
 ├── HW1.ipynb               # Assignment 1
 ├── HW2.ipynb               # Assignment 2

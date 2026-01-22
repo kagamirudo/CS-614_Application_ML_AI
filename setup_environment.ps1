@@ -54,9 +54,40 @@ Write-Host "Activating environment..." -ForegroundColor Green
 conda activate $ENV_NAME
 
 Write-Host ""
+Write-Host "GPU Support Selection:" -ForegroundColor Cyan
+Write-Host "  1) CPU only (default, works everywhere)" -ForegroundColor White
+Write-Host "  2) NVIDIA GPU (CUDA)" -ForegroundColor White
+Write-Host "  3) AMD GPU (ROCm)" -ForegroundColor White
+$gpuChoice = Read-Host "Select option [1-3] (default: 1)"
+if ([string]::IsNullOrWhiteSpace($gpuChoice)) { $gpuChoice = "1" }
+
+Write-Host ""
 Write-Host "Installing required packages via pip..." -ForegroundColor Green
-Write-Host "Note: Using pip because PyTorch for Python 3.13 is available via pip" -ForegroundColor Yellow
-pip install torch torchvision matplotlib numpy seaborn scikit-learn
+
+switch ($gpuChoice) {
+    "2" {
+        Write-Host "Installing PyTorch with CUDA support for NVIDIA GPUs..." -ForegroundColor Yellow
+        Write-Host "Note: Make sure you have CUDA-compatible drivers installed" -ForegroundColor Yellow
+        pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+        pip install matplotlib numpy seaborn scikit-learn
+    }
+    "3" {
+        Write-Host "Installing PyTorch with ROCm support for AMD GPUs..." -ForegroundColor Yellow
+        Write-Host "Note: ROCm on Windows is not officially supported. Use CPU or WSL2 with ROCm." -ForegroundColor Red
+        $continueChoice = Read-Host "Continue with CPU fallback? (y/n)"
+        if ($continueChoice -eq "y" -or $continueChoice -eq "Y") {
+            pip install torch torchvision matplotlib numpy seaborn scikit-learn
+            Write-Host "Warning: Installed CPU version. For AMD GPU, you may need to install ROCm separately." -ForegroundColor Yellow
+        } else {
+            Write-Host "Please install PyTorch with ROCm manually from: https://pytorch.org/get-started/locally/" -ForegroundColor Yellow
+            pip install matplotlib numpy seaborn scikit-learn
+        }
+    }
+    default {
+        Write-Host "Installing CPU-only version (works everywhere)..." -ForegroundColor Green
+        pip install torch torchvision matplotlib numpy seaborn scikit-learn
+    }
+}
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Cyan

@@ -35,6 +35,7 @@ if conda env list | grep -q "^${ENV_NAME} "; then
         echo "Using existing environment. Activating..."
         conda activate ${ENV_NAME}
         echo "Installing/updating packages..."
+        echo "Note: Reinstalling CPU version. For GPU, re-run setup script."
         pip install torch torchvision matplotlib numpy seaborn scikit-learn
         echo ""
         echo "Setup complete! To activate the environment, run:"
@@ -53,9 +54,42 @@ source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate ${ENV_NAME}
 
 echo ""
+echo "GPU Support Selection:"
+echo "  1) CPU only (default, works everywhere)"
+echo "  2) NVIDIA GPU (CUDA)"
+echo "  3) AMD GPU (ROCm)"
+read -p "Select option [1-3] (default: 1): " gpu_choice
+gpu_choice=${gpu_choice:-1}
+
+echo ""
 echo "Installing required packages via pip..."
-echo "Note: Using pip because PyTorch for Python 3.13 is available via pip"
-pip install torch torchvision matplotlib numpy seaborn scikit-learn
+
+case $gpu_choice in
+    2)
+        echo "Installing PyTorch with CUDA support for NVIDIA GPUs..."
+        echo "Note: Make sure you have CUDA-compatible drivers installed"
+        pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+        pip install matplotlib numpy seaborn scikit-learn
+        ;;
+    3)
+        echo "Installing PyTorch with ROCm support for AMD GPUs..."
+        echo "Note: ROCm support varies by GPU model and OS. Check PyTorch ROCm compatibility."
+        echo "For Linux: Visit https://pytorch.org/get-started/locally/ and select ROCm"
+        echo "For Windows: ROCm is not officially supported. Use CPU or WSL2 with ROCm."
+        read -p "Continue with CPU fallback? (y/n) " continue_choice
+        if [[ $continue_choice =~ ^[Yy]$ ]]; then
+            pip install torch torchvision matplotlib numpy seaborn scikit-learn
+            echo "Warning: Installed CPU version. For AMD GPU, you may need to install ROCm separately."
+        else
+            echo "Please install PyTorch with ROCm manually from: https://pytorch.org/get-started/locally/"
+            pip install matplotlib numpy seaborn scikit-learn
+        fi
+        ;;
+    *)
+        echo "Installing CPU-only version (works everywhere)..."
+        pip install torch torchvision matplotlib numpy seaborn scikit-learn
+        ;;
+esac
 
 echo ""
 echo "=========================================="
