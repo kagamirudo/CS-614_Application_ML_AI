@@ -11,11 +11,22 @@ This repository contains assignments and projects for CS 614 - Applications of M
 
 ### Prerequisites
 
+Check if you have all requirements:
+
+```bash
+bash scripts/check_requirements.sh
+```
+
+Required tools:
 - [Make](https://www.gnu.org/software/make/) installed
   - **Linux/Mac**: Usually pre-installed. If not: `sudo apt-get install make` (Linux) or `xcode-select --install` (Mac)
   - **Windows**: Install via [Chocolatey](https://chocolatey.org/) (`choco install make`) or [GnuWin32](http://gnuwin32.sourceforge.net/packages/make.htm)
 - [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution) installed
 - Git installed
+
+**Note**: If you don't have `make` installed, you can still run the setup scripts directly:
+- Linux/Mac: `bash scripts/setup_environment.sh`
+- Windows: `powershell -ExecutionPolicy Bypass -File scripts/setup_environment.ps1`
 
 ### Environment Setup
 
