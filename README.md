@@ -72,14 +72,14 @@ CS614/
 
 1. **Create the repository on GitHub:**
    - Go to https://github.com/new
-   - Repository name: `CS 614 - Application of ML/AI` (or `CS-614---Application-of-ML-AI` if spaces cause issues)
+   - Repository name: `CS-614_Application_ML_AI`
    - Choose private or public
    - **DO NOT** initialize with README, .gitignore, or license (we already have these)
    - Click "Create repository"
 
 2. **Set up the remote (first time only):**
    ```bash
-   git remote add origin https://github.com/<your-username>/CS-614---Application-of-ML-AI.git
+   git remote add origin https://github.com/kagamirudo/CS-614_Application_ML_AI.git
    ```
 
 3. **Push your code:**

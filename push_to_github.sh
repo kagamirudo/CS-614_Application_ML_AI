@@ -17,7 +17,7 @@ if [ -z "$1" ]; then
 fi
 
 GITHUB_USER=$1
-REPO_NAME="CS-614---Application-of-ML-AI"
+REPO_NAME="CS-614_Application_ML_AI"
 
 echo "Setting up remote repository..."
 git remote add origin "https://github.com/${GITHUB_USER}/${REPO_NAME}.git" 2>/dev/null || \
