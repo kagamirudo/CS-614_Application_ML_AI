@@ -1,0 +1,66 @@
+# Data files
+data/
+*.csv
+*.pkl
+*.h5
+*.hdf5
+*.npz
+*.npy
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Model files
+*.pth
+*.pt
+*.ckpt
+*.model
+models/
+checkpoints/
+
+# Logs and outputs
+*.log
+logs/
+outputs/
+results/
+*.png
+*.jpg
+*.jpeg
+*.pdf
+!hw1_res.png  # Keep this specific file if needed
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+*.cache
+
+# OS files
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Conda
+.conda/
