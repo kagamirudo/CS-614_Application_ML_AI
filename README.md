@@ -4,8 +4,8 @@ This repository contains assignments and projects for CS 614 - Applications of M
 
 ## Contents
 
-- **HW1.ipynb**: Programming Assignment 1
-- **HW2.ipynb**: Programming Assignment 2 - CNN for MNIST digit classification
+- **Homework 1/**: Programming Assignment 1
+- **Homework 2/**: Programming Assignment 2 - CNN for MNIST digit classification
 
 ## Quick Start
 
@@ -129,7 +129,9 @@ For AMD GPUs, you may need to install PyTorch with ROCm manually:
    ```bash
    jupyter notebook
    ```
-3. Open the desired notebook (HW1.ipynb or HW2.ipynb)
+3. Navigate to and open the desired notebook:
+   - `Homework 1/HW1.ipynb` - Assignment 1
+   - `Homework 2/HW2.ipynb` - Assignment 2
 
 ## Repository Structure
 
@@ -139,12 +141,15 @@ CS614/
 ├── LICENSE                 # MIT License
 ├── README.md               # This file
 ├── .gitignore              # Git ignore file (excludes data files)
-├── HW1.ipynb               # Assignment 1
-├── HW2.ipynb               # Assignment 2
+├── Homework 1/            # Assignment 1
+│   └── HW1.ipynb
+├── Homework 2/            # Assignment 2
+│   └── HW2.ipynb
 ├── scripts/                # Setup and utility scripts
 │   ├── setup_environment.sh    # Environment setup (Linux/Mac)
 │   ├── setup_environment.ps1   # Environment setup (Windows)
-│   └── check_gpu.py             # GPU detection script
+│   ├── check_gpu.py             # GPU detection script
+│   └── check_requirements.sh    # Requirements checker
 └── data/                   # Data directory (gitignored)
 ```
 
