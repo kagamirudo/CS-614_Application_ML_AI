@@ -6,6 +6,7 @@ This repository contains assignments and projects for CS 614 - Applications of M
 
 - **Homework 1/**: Programming Assignment 1
 - **Homework 2/**: Programming Assignment 2 - CNN for MNIST digit classification
+- **Homework 3/**: Programming Assignment 3 - Transfer learning (ResNet18 on CIFAR-10), with technical document and saved figures
 
 ## Quick Start
 
@@ -114,12 +115,15 @@ images = images.to(device)
   - Use WSL2 with ROCm support
   - Check for community builds or alternative solutions
 
-For AMD GPUs, you may need to install PyTorch with ROCm manually:
+For AMD GPUs (e.g. RX 6600 XT), you may need to install PyTorch with ROCm manually or use the project scripts:
 ```bash
-# Visit https://pytorch.org/get-started/locally/ and select:
-# - OS: Linux
-# - Package: Pip
-# - Compute Platform: ROCm (select your ROCm version)
+# Option 1: Use project scripts (ROCm 5.7, Python 3.11)
+bash scripts/setup_rocm_pytorch.sh   # Creates env at /opt/rocm-pytorch
+bash scripts/install_rocm_kernel.sh  # Registers "Python (rocm-pytorch GPU)" Jupyter kernel
+# Then select that kernel in Jupyter for HW3 (uses gfx1032 workaround via rocm_kernel_wrapper.sh).
+
+# Option 2: Visit https://pytorch.org/get-started/locally/ and select:
+# - OS: Linux, Package: Pip, Compute Platform: ROCm (your version)
 ```
 
 ### Running the Notebooks
@@ -132,6 +136,7 @@ For AMD GPUs, you may need to install PyTorch with ROCm manually:
 3. Navigate to and open the desired notebook:
    - `Homework 1/HW1.ipynb` - Assignment 1
    - `Homework 2/HW2.ipynb` - Assignment 2
+   - `Homework 3/HW3.ipynb` - Assignment 3 (ResNet18 fine-tuning on CIFAR-10)
 
 ## Repository Structure
 
@@ -141,15 +146,21 @@ CS614/
 ├── LICENSE                 # MIT License
 ├── README.md               # This file
 ├── .gitignore              # Git ignore file (excludes data files)
-├── Homework 1/            # Assignment 1
+├── Homework 1/             # Assignment 1
 │   └── HW1.ipynb
-├── Homework 2/            # Assignment 2
+├── Homework 2/             # Assignment 2
 │   └── HW2.ipynb
+├── Homework 3/             # Assignment 3 (transfer learning)
+│   ├── HW3.ipynb           # ResNet18 fine-tuning on CIFAR-10
+│   └── HW3_Technical_Document.md
 ├── scripts/                # Setup and utility scripts
-│   ├── setup_environment.sh    # Environment setup (Linux/Mac)
-│   ├── setup_environment.ps1   # Environment setup (Windows)
-│   ├── check_gpu.py             # GPU detection script
-│   └── check_requirements.sh    # Requirements checker
+│   ├── setup_environment.sh      # Environment setup (Linux/Mac)
+│   ├── setup_environment.ps1    # Environment setup (Windows)
+│   ├── check_gpu.py              # GPU detection script
+│   ├── check_requirements.sh    # Requirements checker
+│   ├── setup_rocm_pytorch.sh     # ROCm PyTorch env (AMD GPU)
+│   ├── rocm_kernel_wrapper.sh   # Jupyter kernel wrapper (gfx1032 workaround)
+│   └── install_rocm_kernel.sh   # Register ROCm Jupyter kernel
 └── data/                   # Data directory (gitignored)
 ```
 
