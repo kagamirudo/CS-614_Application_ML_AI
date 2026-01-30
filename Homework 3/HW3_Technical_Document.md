@@ -72,9 +72,11 @@ Input size: **224×224×3**. Output: **1000** class logits (ImageNet).
 
 - **Preprocessing**
   - Resize to **224×224** (to match ResNet/ImageNet input).  
+  - **Training only:** `RandomHorizontalFlip(p=0.5)` for data augmentation.  
   - `ToTensor()`: scale pixels to [0, 1], shape (C, H, W).  
   - Normalize with ImageNet statistics:  
     - mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225].  
+  - **Testing:** No augmentation (Resize, ToTensor, Normalize only).  
 
 - **Class priors**  
   The dataset is **balanced**:  
@@ -86,24 +88,32 @@ Input size: **224×224×3**. Output: **1000** class logits (ImageNet).
 ## 4. Design Choices
 
 - **New (modified) architecture — what was changed**
-  - **Frozen backbone:** All parameters of the pretrained ResNet18 except the last layer have `requires_grad = False` (no backprop through them).  
+  - **Frozen backbone:** All parameters of the pretrained ResNet18 initially have `requires_grad = False`.  
   - **Replaced final layer:** `model.fc` was changed from `Linear(512, 1000)` to `Linear(512, 10)` to match CIFAR10’s 10 classes.  
-  - Only the **new final layer** (10 output units) is trained.  
+  - **Unfrozen for fine-tuning:** The last ResNet block (`model.layer4`) is then unfrozen (`requires_grad = True`) so it can adapt to CIFAR10. Layers `conv1` through `layer3` remain frozen.  
+  - **Parameters trained:** The new final layer (fc) and **layer4** (last two BasicBlocks, 512 channels).  
 
 - **Training and testing split**
-  - **Training:** PyTorch CIFAR10 `train=True` → 50,000 images.  
-  - **Testing:** PyTorch CIFAR10 `train=False` → 10,000 images.  
+  - **Training:** PyTorch CIFAR10 `train=True` → 50,000 images; DataLoader uses `shuffle=True`.  
+  - **Testing:** PyTorch CIFAR10 `train=False` → 10,000 images; DataLoader uses `shuffle=False`.  
   - No validation split; we report training and testing metrics.  
 
 - **Loss function**  
   **Cross-Entropy Loss** (`nn.CrossEntropyLoss`), standard for multi-class classification.  
 
 - **Optimizer and hyperparameters**
-  - **Optimizer:** Adam.  
-  - **Learning rate:** 1e-3.  
-  - **Parameters updated:** Only `model.fc.parameters()`.  
+  - **Optimizer:** Adam with two parameter groups:  
+    - `model.fc.parameters()`: learning rate **1e-3**.  
+    - `model.layer4.parameters()`: learning rate **1e-4** (smaller to avoid overwriting pretrained features).  
   - **Epochs:** 10.  
-  - **Batch size:** 64.  
+  - **Batch size:** 128.  
+  - **Training:** Full dataset each epoch (`NUM_BATCHES = None`). Model and data are moved to GPU when available; mean loss per epoch is recorded and plotted.
+
+- **Implementation notes (notebook)**
+  - Device: `torch.device('cuda' if torch.cuda.is_available() else 'cpu')`; model and batches are moved to this device (works with ROCm on AMD GPUs as well as NVIDIA CUDA).  
+  - Accuracy and confusion matrices: If predictions are missing (e.g. after kernel restart), the notebook can recompute them via batched evaluation over the train and test loaders.  
+  - Success/failure examples: Predictions over the test set are computed in batches to avoid GPU out-of-memory; then one success and one failure example are plotted.  
+  - Figures: Confusion matrices, success, and failure examples are saved to `confusion_matrices.png`, `success_example.png`, and `failure_example.png` in the notebook directory for use in this document.
 
 ---
 
@@ -113,7 +123,7 @@ Input size: **224×224×3**. Output: **1000** class logits (ImageNet).
 
 ### 5.1 Training information
 
-- **Training time:** _________ seconds (_________ minutes).  
+- **Training time:** 754.83 seconds (12.58 minutes).  
   *(Report the value printed as “Total training time” in the notebook.)*
 
 - **Plot of loss vs epochs:**  
@@ -122,19 +132,19 @@ Input size: **224×224×3**. Output: **1000** class logits (ImageNet).
 ### 5.2 Statistics (training and testing)
 
 - **Accuracy**
-  - Training accuracy: _________ %  
-  - Testing accuracy: _________ %  
+  - Training accuracy: 99.47 %  
+  - Testing accuracy: 90.74 %  
 
 - **Confusion matrices**  
-  *(Insert the two confusion matrices from the notebook: one for the training set, one for the testing set.)*
+  *(Insert the figure saved as `confusion_matrices.png`: training set (left) and testing set (right).)*
 
 ### 5.3 Examples
 
 - **Success case:**  
-  *(Insert the “Success: True=…, Pred=…” image from the notebook.)*
+  *(Insert the image saved as `success_example.png`.)*
 
 - **Failure case:**  
-  *(Insert the “Failure: True=…, Pred=…” image from the notebook.)*
+  *(Insert the image saved as `failure_example.png`.)*
 
 ---
 
