@@ -7,6 +7,9 @@ This repository contains assignments and projects for CS 614 - Applications of M
 - **Homework 1/**: Programming Assignment 1
 - **Homework 2/**: Programming Assignment 2 - CNN for MNIST digit classification
 - **Homework 3/**: Programming Assignment 3 - Transfer learning (ResNet18 on CIFAR-10), with technical document and saved figures
+- **Homework 4/**: Object detection with Faster R-CNN (torchvision)
+- **Homework 6/**: Transformer blocks (BERT-style encoder from scratch)
+- **Applications/**: Apollo music restoration – input a compressed track (e.g. MP3), output restored WAV. See [Applications/README.md](Applications/README.md) for setup, model theory, and Git notes
 
 ## Quick Start
 
@@ -137,6 +140,9 @@ bash scripts/install_rocm_kernel.sh  # Registers "Python (rocm-pytorch GPU)" Jup
    - `Homework 1/HW1.ipynb` - Assignment 1
    - `Homework 2/HW2.ipynb` - Assignment 2
    - `Homework 3/HW3.ipynb` - Assignment 3 (ResNet18 fine-tuning on CIFAR-10)
+   - `Homework 4/HW4.ipynb` - Assignment 4 (Faster R-CNN object detection)
+   - `Homework 6/Lecture.ipynb` - Transformer / BERT-style encoder
+   - `Applications/music.ipynb` - Apollo music restoration (run `make apollo-kernel` first; see [Applications/README.md](Applications/README.md))
 
 ## Repository Structure
 
@@ -146,22 +152,32 @@ CS614/
 ├── LICENSE                 # MIT License
 ├── README.md               # This file
 ├── .gitignore              # Git ignore file (excludes data files)
-├── Homework 1/             # Assignment 1
+├── Homework 1/              # Assignment 1
 │   └── HW1.ipynb
-├── Homework 2/             # Assignment 2
+├── Homework 2/              # Assignment 2
 │   └── HW2.ipynb
-├── Homework 3/             # Assignment 3 (transfer learning)
+├── Homework 3/              # Assignment 3 (transfer learning)
 │   ├── HW3.ipynb           # ResNet18 fine-tuning on CIFAR-10
 │   └── HW3_Technical_Document.md
-├── scripts/                # Setup and utility scripts
-│   ├── setup_environment.sh      # Environment setup (Linux/Mac)
-│   ├── setup_environment.ps1    # Environment setup (Windows)
-│   ├── check_gpu.py              # GPU detection script
-│   ├── check_requirements.sh    # Requirements checker
-│   ├── setup_rocm_pytorch.sh     # ROCm PyTorch env (AMD GPU)
-│   ├── rocm_kernel_wrapper.sh   # Jupyter kernel wrapper (gfx1032 workaround)
-│   └── install_rocm_kernel.sh   # Register ROCm Jupyter kernel
-└── data/                   # Data directory (gitignored)
+├── Homework 4/              # Assignment 4 (object detection)
+│   └── HW4.ipynb
+├── Homework 6/              # Transformer / BERT-style
+│   └── Lecture.ipynb
+├── Applications/            # Apollo music restoration
+│   ├── README.md           # Setup, model theory, Git (Apollo submodule)
+│   ├── music.ipynb         # Restore compressed audio → WAV
+│   ├── Apollo/             # Apollo model (look2hear)
+│   ├── Makefile            # apollo-kernel, apollo-clean
+│   └── create_apollo_kernel.sh / clean_apollo_env.sh
+├── scripts/                 # Setup and utility scripts
+│   ├── setup_environment.sh
+│   ├── setup_environment.ps1
+│   ├── check_gpu.py
+│   ├── check_requirements.sh
+│   ├── setup_rocm_pytorch.sh
+│   ├── rocm_kernel_wrapper.sh
+│   └── install_rocm_kernel.sh
+└── data/                    # Data directory (gitignored)
 ```
 
 ## Pushing to GitHub
@@ -195,6 +211,9 @@ CS614/
 ```bash
 make setup              # Set up conda environment (auto-detects OS)
 make check-gpu          # Check GPU availability
+make apollo-kernel      # Create Jupyter kernel for Apollo (Applications/music.ipynb)
+make apollo-clean       # Remove old Apollo env/kernel (after failed install)
+make apollo-clean-all   # Full Apollo cleanup including /opt/apollo-env
 make push               # Commit and push to GitHub (default message)
 make push MESSAGE="msg" # Commit and push with custom message
 make help               # Show all available commands
