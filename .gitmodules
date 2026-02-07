@@ -1,0 +1,3 @@
+[submodule "Applications/Apollo"]
+	path = Applications/Apollo
+	url = https://github.com/JusperLee/Apollo.git
