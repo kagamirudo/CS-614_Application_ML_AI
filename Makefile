@@ -1,4 +1,4 @@
-.PHONY: push setup help check-tools
+.PHONY: push setup help check-tools apollo-kernel apollo-clean apollo-clean-all
 
 # Default commit message if not provided
 MESSAGE ?= "Update repository"
@@ -35,6 +35,9 @@ help:
 	@echo "  make push               - Commit and push changes (uses default message)"
 	@echo "  make push MESSAGE=\"msg\" - Commit and push with custom message"
 	@echo "  make check-gpu          - Check GPU availability"
+	@echo "  make apollo-kernel      - Create Jupyter kernel for Apollo (Applications/music.ipynb)"
+	@echo "  make apollo-clean       - Remove old Apollo env/kernel (after failed install)"
+	@echo "  make apollo-clean-all  - Full Apollo cleanup including /opt/apollo-env"
 	@echo "  make help               - Show this help message"
 	@echo ""
 
@@ -80,6 +83,15 @@ check-gpu:
 	 echo "  1. Python is installed"; \
 	 echo "  2. PyTorch is installed (run 'make setup' first)"; \
 	 exit 1)
+
+apollo-kernel:
+	@$(MAKE) -C Applications apollo-kernel
+
+apollo-clean:
+	@$(MAKE) -C Applications apollo-clean
+
+apollo-clean-all:
+	@$(MAKE) -C Applications apollo-clean-all
 
 push:
 	@echo "Staging all changes..."
