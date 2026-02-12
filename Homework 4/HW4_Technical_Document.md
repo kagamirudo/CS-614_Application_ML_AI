@@ -66,7 +66,7 @@ Below is a **2 × 2 grid** satisfying the requirement:
 
 |                        | **Image 1**                      | **Image 2**                      |
 |------------------------|----------------------------------|----------------------------------|
-| **Original Input**     | ![Image 1 Original](image1.png)  | ![Image 2 Original](image2.png)  |
+| **Original Input**     | ![Image 1 Original](images/1.jpg)  | ![Image 2 Original](images/2.jpg)  |
 | **With Detections**    | ![Image 1 Boxes](image1_boxes.png) | ![Image 2 Boxes](image2_boxes.png) |
 
 **Note:**  

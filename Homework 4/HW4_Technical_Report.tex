@@ -1,0 +1,185 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{subcaption}
+\usepackage{array}
+
+\geometry{margin=0.47in}
+
+\title{CS 614 - Technical Report: Object Detection with Faster R-CNN}
+\author{Gary Pham - gp492}
+\date{January 2026}
+
+\begin{document}
+\maketitle
+
+%-------------------------------------------------------------------------------
+\section{Description of the Pretrained Model}
+%-------------------------------------------------------------------------------
+
+\subsection{Architecture}
+
+For this assignment I used the \textbf{Faster R-CNN with ResNet-50 FPN backbone} provided by \texttt{torchvision} (\texttt{fasterrcnn\_resnet50\_fpn} with \texttt{FasterRCNN\_ResNet50\_FPN\_Weights.DEFAULT}).
+
+At a high level, the architecture consists of:
+
+\begin{itemize}
+  \item \textbf{Backbone (ResNet-50 + FPN)} \\
+    A deep residual convolutional network (ResNet-50) extracts feature maps from the input image. A \textbf{Feature Pyramid Network (FPN)} takes intermediate feature maps from the backbone and builds a multi-scale feature pyramid, which helps detect both small and large objects.
+
+  \item \textbf{Region Proposal Network (RPN)} \\
+    Slides small convolutional filters over the FPN feature maps. At every spatial location it predicts a set of \textbf{anchor boxes} (with different aspect ratios and scales), \textbf{objectness scores} (object vs.\ background), and \textbf{box regression offsets}. The RPN produces a set of \textbf{region proposals} (candidate bounding boxes that may contain objects).
+
+  \item \textbf{RoI Pooling / RoI Align + Detection Head} \\
+    Region proposals are projected back onto the FPN feature maps. For each proposal, \textbf{RoIAlign} extracts a fixed-size feature representation. These RoI features are passed through fully connected layers that output a \textbf{classification distribution} over all object classes plus background, and \textbf{bounding-box regression deltas} to refine the proposal boxes.
+\end{itemize}
+
+During inference, the model: (1) runs the backbone and FPN on the input image; (2) uses the RPN to generate proposals; (3) applies the detection head to each proposal; (4) applies \textbf{non-maximum suppression (NMS)} per class to remove highly overlapping boxes; and (5) returns final \textbf{bounding boxes}, \textbf{class labels}, and \textbf{confidence scores}.
+
+\subsection{Training Dataset}
+
+The pretrained weights \texttt{FasterRCNN\_ResNet50\_FPN\_Weights.DEFAULT} were trained on the \textbf{COCO (Common Objects in Context)} dataset.
+
+\begin{itemize}
+  \item \textbf{Type}: Large-scale everyday object detection dataset.
+  \item \textbf{Classes}: 91 object categories in the original COCO annotations; 80 categories are commonly used in many implementations (e.g., person, car, bicycle, dog, cat, chair, traffic light).
+  \item \textbf{Annotations}: Each image has one or more objects with bounding boxes, category labels, and instance IDs.
+  \item \textbf{Image characteristics}: Complex, real-world scenes with multiple objects; large variation in scale, pose, lighting, and occlusion.
+\end{itemize}
+
+Because the model is trained on COCO, it can detect a wide variety of common objects in generic scenes, which is suitable for the test images used in this assignment.
+
+%-------------------------------------------------------------------------------
+\section{2$\times$2 Grid of Images}
+%-------------------------------------------------------------------------------
+
+I selected two test images from my own collection. Both were loaded with PIL, converted to tensors, and preprocessed using the model's default \texttt{weights.transforms()} before inference.
+
+Figure~\ref{fig:grid} shows a 2$\times$2 grid: the first row contains the \textbf{original input} images; the second row shows the \textbf{detection results} for the same images with color-coded bounding boxes. Detections were filtered by a confidence threshold (see Section~\ref{sec:threshold}). Bounding boxes were drawn using \texttt{draw\_bounding\_boxes} from \texttt{torchvision.utils} with class-specific colors.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.98\textwidth}
+    \centering
+    \IfFileExists{images/origin.png}{%
+      \includegraphics[width=0.8\linewidth]{images/origin.png}%
+    }{%
+      \fbox{\parbox{\dimexpr0.8\linewidth-2\fboxsep-2\fboxrule}{\centering\small Save from notebook as \texttt{origin.png}}}%
+    }
+    \caption{Original input images for both Image 1 and Image 2 (combined in \texttt{origin.png}).}
+  \end{subfigure}
+
+  \vspace{0.5em}
+
+  \begin{subfigure}[t]{0.98\textwidth}
+    \centering
+    \IfFileExists{images/boxed.png}{%
+      \includegraphics[width=0.8\linewidth]{images/boxed.png}%
+    }{%
+      \fbox{\parbox{\dimexpr0.8\linewidth-2\fboxsep-2\fboxrule}{\centering\small Save from notebook as \texttt{boxed.png}}}%
+    }
+    \caption{Combined detection results for both images in a single image (\texttt{boxed.png}).}
+  \end{subfigure}
+  \caption{Top row: original input images (from \texttt{images/1.jpg}, \texttt{images/2.jpg}). Bottom row: detection results with bounding boxes (from \texttt{images/1\_detections.png}, \texttt{images/2\_detections.png}); score threshold 0.8.}
+  \label{fig:grid}
+\end{figure}
+
+\subsection{Detection Tables (score threshold = 0.8)}
+
+Table~\ref{tab:det1} lists all detections above the threshold for Image~1; Table~\ref{tab:det2} for Image~2. Coordinates are in pixel space $[x_1, y_1, x_2, y_2]$.
+
+\begin{table}[H]
+  \centering
+  \caption{Detections for Image 1 with score\_threshold=0.8.}
+  \label{tab:det1}
+  \small
+  \begin{tabular}{clcrl}
+    \toprule
+    Idx & Class & Score & Box [x1, y1, x2, y2] \\
+    \midrule
+    0 & wine glass & 0.991 & [652, 979, 1148, 1899] \\
+    1 & cup & 0.990 & [268, 1321, 622, 1878] \\
+    2 & bowl & 0.985 & [343, 1845, 1065, 2176] \\
+    3 & dining table & 0.971 & [10, 1329, 1533, 2671] \\
+    4 & bottle & 0.958 & [1270, 2, 1359, 214] \\
+    5 & bottle & 0.942 & [1034, 0, 1124, 151] \\
+    6 & bottle & 0.920 & [1187, 1, 1283, 195] \\
+    7 & spoon & 0.915 & [370, 2112, 1064, 2206] \\
+    8 & person & 0.914 & [13, 1344, 497, 1823] \\
+    9 & bottle & 0.894 & [1343, 1, 1442, 235] \\
+    10 & bottle & 0.886 & [1122, 3, 1205, 174] \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \caption{Detections for Image 2 with score\_threshold=0.8.}
+  \label{tab:det2}
+  \small
+  \begin{tabular}{clcrl}
+    \toprule
+    Idx & Class & Score & Box [x1, y1, x2, y2] \\
+    \midrule
+    0 & cup & 0.993 & [2298, 17, 2790, 813] \\
+    1 & person & 0.965 & [3948, 747, 5957, 1589] \\
+    2 & bowl & 0.964 & [4250, 2840, 5558, 3983] \\
+    3 & cup & 0.950 & [2041, 8, 2317, 457] \\
+    4 & fork & 0.936 & [234, 1316, 1606, 2046] \\
+    5 & dining table & 0.931 & [0, 140, 5812, 3851] \\
+    6 & person & 0.929 & [0, 1725, 1402, 3897] \\
+    7 & person & 0.921 & [3807, 70, 5988, 1542] \\
+    8 & cup & 0.916 & [1584, 6, 1968, 193] \\
+    9 & spoon & 0.890 & [4626, 1979, 5257, 3275] \\
+    10 & cup & 0.882 & [662, 12, 1168, 368] \\
+    11 & bowl & 0.871 & [2931, 2055, 4177, 3359] \\
+    12 & fork & 0.813 & [189, 1638, 1839, 2059] \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+%-------------------------------------------------------------------------------
+\section{Additional Details, Resources, and Threshold Choice}
+\label{sec:details}
+%-------------------------------------------------------------------------------
+
+\subsection{Pre-processing and Post-processing}
+
+\textbf{Pre-processing:} Images were loaded using PIL. Each image was converted to a tensor with \texttt{pil\_to\_tensor} and passed through \texttt{weights.transforms()}, which converts to float, scales to $[0,1]$, and normalizes using the mean and standard deviation used when training the model.
+
+\textbf{Post-processing:} The model returns, per image, \texttt{boxes}, \texttt{labels}, and \texttt{scores}. I filtered detections by a confidence threshold, mapped \texttt{labels} to class names via \texttt{weights.meta[\texttt{"}categories\texttt{"}]}, and passed the filtered boxes and labels to \texttt{draw\_bounding\_boxes} to produce the final annotated images.
+
+\subsection{Threshold Choice and Rationale}
+\label{sec:threshold}
+
+I used a \textbf{score threshold of 0.8}.
+
+\begin{itemize}
+  \item \textbf{Why 0.8?} Lower thresholds (e.g., 0.3--0.5) produced many boxes, including false positives and uncertain detections. A threshold of 0.8 keeps only detections where the model is relatively confident. For my test images, 0.8 preserved the main, visually obvious objects (e.g., people, cars, bottles, tableware) while removing most spurious detections.
+
+  \item \textbf{Effect of different thresholds:}
+  \begin{itemize}
+    \item \textbf{Threshold $< 0.5$}: Many more boxes; overlapping and wrong detections; visualization becomes cluttered.
+    \item \textbf{Threshold $\approx 0.7$--0.8}: Good balance between precision and readability; boxes mostly correspond to clearly visible objects.
+    \item \textbf{Threshold $> 0.9$}: Very few detections; some real objects with slightly lower confidence are dropped.
+  \end{itemize}
+\end{itemize}
+
+Given the goal of visualizing clear, high-quality detections, I chose \textbf{0.8} as a reasonable compromise: it preserves the most important objects while avoiding clutter and obvious false positives, making the 2$\times$2 grid easy to interpret.
+
+\subsection{Resources Used}
+
+\begin{itemize}
+  \item PyTorch tutorial (torchvision detection/finetuning): \\
+    \texttt{https://pytorch.org/tutorials/intermediate/torchvision\_tutorial.html}
+  \item Torchvision visualization utilities (\texttt{draw\_bounding\_boxes}, etc.): \\
+    \texttt{https://pytorch.org/vision/main/auto\_examples/others/plot\_visualization\_utils.html}
+  \item Official PyTorch / Torchvision documentation for \texttt{fasterrcnn\_resnet50\_fpn} and 
+  \newline \texttt{FasterRCNN\_ResNet50\_FPN\_Weights}, and image transforms.
+\end{itemize}
+
+\end{document}

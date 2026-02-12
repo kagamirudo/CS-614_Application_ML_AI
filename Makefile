@@ -1,4 +1,4 @@
-.PHONY: push setup help check-tools apollo-kernel apollo-clean apollo-clean-all
+.PHONY: push setup help check-tools cs614-kernel apollo-kernel apollo-clean apollo-clean-all audiofix-kernel audiofix-clean audiofix-clean-all
 
 # Default commit message if not provided
 MESSAGE ?= "Update repository"
@@ -32,12 +32,16 @@ help:
 	@echo ""
 	@echo "Available targets:"
 	@echo "  make setup              - Set up conda environment (auto-detects OS)"
+	@echo "  make cs614-kernel       - Register Jupyter kernel 'Python (cs614)' for HW4 (torchvision detection)"
 	@echo "  make push               - Commit and push changes (uses default message)"
 	@echo "  make push MESSAGE=\"msg\" - Commit and push with custom message"
 	@echo "  make check-gpu          - Check GPU availability"
-	@echo "  make apollo-kernel      - Create Jupyter kernel for Apollo (Applications/music.ipynb)"
+	@echo "  make apollo-kernel      - Create Jupyter kernel for Apollo (Applications/apollo.ipynb)"
 	@echo "  make apollo-clean       - Remove old Apollo env/kernel (after failed install)"
 	@echo "  make apollo-clean-all  - Full Apollo cleanup including /opt/apollo-env"
+	@echo "  make audiofix-kernel    - Create Jupyter kernel 'Python (audiofix)' for scratch/click pipeline in Applications/music.ipynb"
+	@echo "  make audiofix-clean     - Remove old 'audiofix' env/kernel (after failed install)"
+	@echo "  make audiofix-clean-all - Full audiofix cleanup including /opt/audiofix-env"
 	@echo "  make help               - Show this help message"
 	@echo ""
 
@@ -74,6 +78,9 @@ setup: check-tools
 		bash $(SETUP_SCRIPT); \
 	fi
 
+cs614-kernel:
+	@bash scripts/install_cs614_kernel.sh
+
 check-gpu:
 	@echo "Checking GPU availability..."
 	@conda run -n cs614 python scripts/check_gpu.py 2>/dev/null || \
@@ -92,6 +99,15 @@ apollo-clean:
 
 apollo-clean-all:
 	@$(MAKE) -C Applications apollo-clean-all
+
+audiofix-kernel:
+	@$(MAKE) -C Applications audiofix-kernel
+
+audiofix-clean:
+	@$(MAKE) -C Applications audiofix-clean
+
+audiofix-clean-all:
+	@$(MAKE) -C Applications audiofix-clean-all
 
 push:
 	@echo "Staging all changes..."
