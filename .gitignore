@@ -6,6 +6,7 @@ data/
 *.hdf5
 *.npz
 *.npy
+*.aux
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
