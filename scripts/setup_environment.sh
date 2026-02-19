@@ -1,6 +1,7 @@
 #!/bin/bash
 # Setup script for CS 614 - Applications of Machine Learning
-# This script creates a conda environment and installs all required packages
+# This script creates a conda environment and installs all required packages.
+# Expects conda in PATH or at /opt/miniconda3 (system install).
 
 set -e  # Exit on error
 
@@ -12,16 +13,24 @@ echo "CS 614 Environment Setup"
 echo "=========================================="
 echo ""
 
-# Check if conda is installed
+# Ensure conda is available (use /opt/miniconda3 if not in PATH)
 if ! command -v conda &> /dev/null; then
-    echo "Error: conda is not installed or not in PATH"
-    echo "Please install Miniconda or Anaconda first:"
-    echo "  https://docs.conda.io/en/latest/miniconda.html"
-    exit 1
+    if [[ -f /opt/miniconda3/etc/profile.d/conda.sh ]]; then
+        source /opt/miniconda3/etc/profile.d/conda.sh
+    else
+        echo "Error: conda is not installed or not in PATH"
+        echo "Please install Miniconda (e.g. to /opt/miniconda3) or add it to PATH:"
+        echo "  https://docs.conda.io/en/latest/miniconda.html"
+        exit 1
+    fi
 fi
 
 echo "Conda found: $(conda --version)"
 echo ""
+
+# Accept Anaconda channel ToS so non-interactive (e.g. make setup) works
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main 2>/dev/null || true
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r 2>/dev/null || true
 
 # Check if environment already exists
 if conda env list | grep -q "^${ENV_NAME} "; then
@@ -73,16 +82,22 @@ case $gpu_choice in
         ;;
     3)
         echo "Installing PyTorch with ROCm support for AMD GPUs..."
-        echo "Note: ROCm support varies by GPU model and OS. Check PyTorch ROCm compatibility."
-        echo "For Linux: Visit https://pytorch.org/get-started/locally/ and select ROCm"
-        echo "For Windows: ROCm is not officially supported. Use CPU or WSL2 with ROCm."
-        read -p "Continue with CPU fallback? (y/n) " continue_choice
-        if [[ $continue_choice =~ ^[Yy]$ ]]; then
-            pip install torch torchvision matplotlib numpy seaborn scikit-learn
-            echo "Warning: Installed CPU version. For AMD GPU, you may need to install ROCm separately."
+        echo "Note: ROCm wheels require Python 3.11. This env uses Python ${PYTHON_VERSION}."
+        if [[ "$PYTHON_VERSION" != "3.11" ]]; then
+            echo "Recommendation: use the dedicated ROCm kernel for GPU instead:"
+            echo "  bash scripts/setup_rocm_pytorch.sh && bash scripts/install_rocm_kernel.sh"
+            echo "  Then in notebooks select kernel 'Python (rocm-pytorch GPU)'."
+            read -p "Install CPU version here and use rocm-pytorch kernel for GPU? (y/n) " continue_choice
+            if [[ $continue_choice =~ ^[Yy]$ ]]; then
+                pip install torch torchvision matplotlib numpy seaborn scikit-learn
+            else
+                echo "Exiting. Run the commands above to get GPU support."
+                exit 0
+            fi
         else
-            echo "Please install PyTorch with ROCm manually from: https://pytorch.org/get-started/locally/"
-            pip install matplotlib numpy seaborn scikit-learn
+            REPO="https://repo.radeon.com/rocm/manylinux/rocm-rel-5.7"
+            pip install "$REPO/torch-2.0.1+rocm5.7-cp311-cp311-linux_x86_64.whl" "$REPO/torchvision-0.15.2+rocm5.7-cp311-cp311-linux_x86_64.whl"
+            pip install "numpy<2" matplotlib seaborn scikit-learn
         fi
         ;;
     *)

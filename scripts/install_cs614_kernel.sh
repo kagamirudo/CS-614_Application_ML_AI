@@ -3,10 +3,16 @@
 # Run: make cs614-kernel   or   bash scripts/install_cs614_kernel.sh
 # Then in Cursor/Jupyter: Kernel → Change Kernel → Python (cs614)
 # Use this kernel for HW4 (object detection) so torchvision C++ ops load correctly.
+#
+# For AMD GPU: use kernel "Python (rocm-pytorch GPU)" instead (see scripts/setup_rocm_pytorch.sh and scripts/install_rocm_kernel.sh).
 
 set -e
 ENV_NAME="cs614"
 
+# Ensure conda is available (e.g. when run via make without interactive shell)
+if ! command -v conda &> /dev/null; then
+  [[ -f /opt/miniconda3/etc/profile.d/conda.sh ]] && source /opt/miniconda3/etc/profile.d/conda.sh
+fi
 if ! conda env list | grep -q "^${ENV_NAME} "; then
   echo "Conda env '${ENV_NAME}' not found. Create it first:"
   echo "  make setup"

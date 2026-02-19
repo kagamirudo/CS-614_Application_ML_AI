@@ -2,13 +2,8 @@
 .PHONY: apollo-kernel apollo-clean apollo-clean-all audiofix-kernel audiofix-clean audiofix-clean-all help
 
 help:
-	@echo "Applications Makefile"
-	@echo "  make apollo-kernel     - Create conda env in /opt/apollo-env and register Jupyter kernel 'Python (Apollo)'"
-	@echo "  make apollo-clean      - Remove old named env 'apollo' and kernel (after failed/partial install)"
-	@echo "  make apollo-clean-all - Same + remove /opt/apollo-env (full cleanup, then re-run apollo-kernel to reinstall)"
-	@echo "  make audiofix-kernel   - Create conda env in /opt/audiofix-env and register Jupyter kernel 'Python (audiofix)' for music.ipynb"
-	@echo "  make audiofix-clean    - Remove old 'audiofix' env/kernel (Anaconda) for music.ipynb"
-	@echo "  make audiofix-clean-all- Same + remove /opt/audiofix-env (full cleanup, then re-run audiofix-kernel)"
+	@echo "Applications — make apollo-kernel | apollo-clean | apollo-clean-all"
+	@echo "               make audiofix-kernel | audiofix-clean | audiofix-clean-all"
 
 apollo-kernel:
 	@bash ./create_apollo_kernel.sh

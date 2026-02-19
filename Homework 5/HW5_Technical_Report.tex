@@ -1,0 +1,165 @@
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=0.47in}
+
+\title{CS 614 - Technical Report: Word2Vec with CBOW}
+\author{Gary Pham - gp492}
+\date{February 2026}
+
+\begin{document}
+\maketitle
+
+%-------------------------------------------------------------------------------
+\section{Description of the Dataset You Created}
+%-------------------------------------------------------------------------------
+
+Work your way through the Jupyter notebook. This technical report includes:
+
+\subsection{Dataset Statistics}
+
+The dataset consists of \textbf{28 sentences} containing \textbf{66 unique words} after preprocessing. The preprocessing step involved simple regex tokenization with lowercasing, using the pattern \texttt{[a-z']+} to extract alphabetic tokens and drop punctuation marks.
+
+\subsection{Example Sentences}
+
+The following are representative examples from the dataset:
+
+\begin{itemize}
+  \item What is the best time to call you tomorrow?
+  \item What is the best hour to call you tomorrow?
+  \item What is the best time to contact you tomorrow?
+  \item What is the best hour to contact you tomorrow?
+  \item Can we schedule a meeting for tomorrow morning?
+\end{itemize}
+
+The dataset was intentionally designed with overlapping contexts and semantic relationships. For instance, sentences contain synonyms (e.g., \texttt{time}/\texttt{hour}, \texttt{call}/\texttt{contact}/\texttt{phone}), related concepts (e.g., \texttt{meeting}/\texttt{appointment}), and other semantic pairs (e.g., \texttt{car}/\texttt{automobile}, \texttt{quick}/\texttt{fast}). This design allows the embedding space to learn useful similarity structure from a relatively small corpus.
+
+%-------------------------------------------------------------------------------
+\section{Hyperparameter Design Choices}
+%-------------------------------------------------------------------------------
+
+\subsection{Window Size}
+
+The context window size was set to \textbf{5}, meaning that for each target word, we consider 2 words before and 2 words after it as context. This is an odd integer window size, which ensures a balanced context on both sides of the target word. The window size of 5 is consistent with common practices in word2vec implementations and provides a good balance between capturing local context and computational efficiency.
+
+\subsection{Embedding Dimension}
+
+The embedding dimension was set to \textbf{300}, following the original word2vec paper which demonstrated that 300-dimensional embeddings provide an optimal trade-off between embedding quality and computational cost. Each word in the vocabulary is represented as a 300-dimensional vector.
+
+\subsection{Number of Training Epochs}
+
+The model was trained for \textbf{500 epochs}. This number was chosen to ensure sufficient training for convergence on the small synthetic dataset. The training loss was monitored throughout training to verify convergence.
+
+\subsection{Loss Function, Optimizer, and Related Hyperparameters}
+
+\begin{itemize}
+  \item \textbf{Loss Function}: \texttt{CrossEntropyLoss} from PyTorch. This is appropriate for the multi-class classification task where we predict the center word from context words. PyTorch's \texttt{CrossEntropyLoss} expects raw logits (unnormalized scores) and applies softmax internally.
+  
+  \item \textbf{Optimizer}: \texttt{Adam} optimizer with an initial learning rate of \textbf{0.025}. Following the original word2vec paper recommendations, a learning rate scheduler was used to linearly decay the learning rate from 0.025 to 0 over the course of training. This gradual decay helps stabilize training and improve convergence.
+  
+  \item \textbf{Batch Size}: \textbf{32}. This batch size provides a good balance between training stability and computational efficiency for the dataset size.
+\end{itemize}
+
+\subsection{Additional Design Choices}
+
+\begin{itemize}
+  \item \textbf{Model Architecture}: The CBOW (Continuous Bag of Words) model was implemented using PyTorch's \texttt{nn.Embedding} layer followed by a linear classifier. The model architecture consists of:
+  \begin{itemize}
+    \item An \texttt{Embedding} layer that maps word indices to 300-dimensional vectors
+    \item A mean pooling operation that averages the context word embeddings
+    \item A \texttt{Linear} layer that maps the averaged embedding to vocabulary-sized logits
+  \end{itemize}
+  
+  \item \textbf{Embedding Regularization}: The embedding layer uses \texttt{max\_norm=1} to restrict embedding vector norms. This acts as a regularization technique and prevents embedding weights from growing uncontrollably during training. It has been shown to improve similarity relationships between related words.
+  
+  \item \textbf{Tokenization}: Simple regex-based tokenization (\texttt{re.findall(r"[a-z']+", ...)}) was used to lowercase all text and extract only alphabetic tokens, dropping punctuation marks. This is intentionally simple since the dataset is small and synthetic.
+  
+  \item \textbf{Implementation Details}: The implementation follows the approach described in the Towards Data Science article on word2vec with PyTorch, using \texttt{nn.Embedding} rather than one-hot encoding with linear layers for better efficiency.
+\end{itemize}
+
+%-------------------------------------------------------------------------------
+\section{Results}
+%-------------------------------------------------------------------------------
+
+\subsection{Training Plot}
+
+Figure~\ref{fig:training} shows the training loss over 500 epochs. The loss decreases from an initial value of approximately 3.86 to a final value of 0.0681, demonstrating successful convergence. The plot includes annotations marking the initial and final loss values.
+
+\begin{figure}[H]
+  \centering
+  \IfFileExists{training_loss.png}{%
+    \includegraphics[width=0.9\linewidth]{training_loss.png}%
+  }{%
+    \fbox{\parbox{\dimexpr0.9\linewidth-2\fboxsep-2\fboxrule}{\centering\small Training loss plot from \texttt{training\_loss.png}}}%
+  }
+  \caption{CBOW training loss over 500 epochs. The loss decreases from 3.86 to 0.0681, showing successful convergence.}
+  \label{fig:training}
+\end{figure}
+
+\subsection{Model Performance Metrics}
+
+The trained model achieved the following performance metrics:
+
+\begin{itemize}
+  \item \textbf{Final Training Loss}: 0.0681
+  \item \textbf{Top-1 Accuracy}: 95.40\% (exact match accuracy)
+  \item \textbf{Top-3 Accuracy}: 100.00\% (correct word in top 3 predictions)
+  \item \textbf{Top-5 Accuracy}: 100.00\% (correct word in top 5 predictions)
+  \item \textbf{Perplexity}: 1.07
+\end{itemize}
+
+The high accuracy metrics indicate that the model successfully learned to predict center words from their context. The perplexity of 1.07 is very low, indicating high confidence in predictions, which is expected given the small, controlled vocabulary and synthetic nature of the dataset.
+
+\subsection{Results of Similar Word Tests}
+
+To evaluate the quality of the learned word embeddings, cosine similarity was computed between word vectors. Table~\ref{tab:similarity} shows the top-5 most similar words for a set of test words, along with their cosine similarity scores.
+
+\begin{table}[H]
+  \centering
+  \caption{Top-5 most similar words (by cosine similarity) for selected test words.}
+  \label{tab:similarity}
+  \small
+  \begin{tabular}{cl}
+    \toprule
+    Word & Top Similar Words (cosine similarity) \\
+    \midrule
+    \texttt{time} & \texttt{hour} (0.817), \texttt{dog} (0.357), \texttt{for} (0.332), \texttt{you} (0.231), \texttt{up} (0.220) \\
+    \texttt{hour} & \texttt{time} (0.817), \texttt{you} (0.460), \texttt{is} (0.352), \texttt{works} (0.309), \texttt{dog} (0.283) \\
+    \texttt{call} & \texttt{contact} (0.777), \texttt{best} (0.719), \texttt{good} (0.371), \texttt{meeting} (0.271), \texttt{afternoon} (0.205) \\
+    \texttt{contact} & \texttt{call} (0.777), \texttt{best} (0.553), \texttt{good} (0.342), \texttt{have} (0.269), \texttt{you} (0.209) \\
+    \texttt{meeting} & \texttt{he} (0.622), \texttt{morning} (0.590), \texttt{afternoon} (0.524), \texttt{dog} (0.434), \texttt{arrange} (0.409) \\
+    \texttt{appointment} & \texttt{purchased} (0.554), \texttt{automobile} (0.554), \texttt{she} (0.554), \texttt{yesterday} (0.554), \texttt{set} (0.363) \\
+    \texttt{car} & \texttt{bought} (1.000), \texttt{last} (0.471), \texttt{arrange} (0.287), \texttt{meeting} (0.253), \texttt{we} (0.237) \\
+    \texttt{automobile} & \texttt{purchased} (1.000), \texttt{yesterday} (1.000), \texttt{she} (1.000), \texttt{plan} (0.572), \texttt{appointment} (0.554) \\
+    \texttt{quick} & \texttt{fast} (0.830), \texttt{brown} (0.670), \texttt{leaps} (0.484), \texttt{the} (0.221), \texttt{over} (0.206) \\
+    \texttt{fast} & \texttt{quick} (0.830), \texttt{brown} (0.664), \texttt{jumps} (0.469), \texttt{leaps} (0.302), \texttt{over} (0.207) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsubsection{Analysis of Similarity Results}
+
+The similarity results demonstrate that the model successfully learned semantic relationships:
+
+\begin{itemize}
+  \item \textbf{Synonym pairs} show high similarity: \texttt{time}/\texttt{hour} (0.817), \texttt{call}/\texttt{contact} (0.777), and \texttt{quick}/\texttt{fast} (0.830) are correctly identified as the most similar words to each other.
+  
+  \item \textbf{Related concepts} are captured: \texttt{car} is most similar to \texttt{bought} (1.000), and \texttt{automobile} is most similar to \texttt{purchased} (1.000), reflecting the co-occurrence patterns in the training sentences.
+  
+  \item \textbf{Contextual relationships} are learned: \texttt{meeting} is associated with temporal words like \texttt{morning} and \texttt{afternoon}, and \texttt{quick}/\texttt{fast} are associated with \texttt{brown}, reflecting their co-occurrence in the ``quick brown fox'' sentences.
+  
+  \item Some results reflect the small dataset size: words like \texttt{dog} appear in similarity lists due to frequent co-occurrence in the training sentences, even when not semantically related to the query word.
+\end{itemize}
+
+Overall, the model demonstrates that CBOW successfully learns meaningful word embeddings that capture semantic and contextual relationships, even from a small synthetic dataset.
+
+\end{document}

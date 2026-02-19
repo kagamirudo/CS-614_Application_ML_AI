@@ -1,4 +1,4 @@
-.PHONY: push setup help check-tools cs614-kernel apollo-kernel apollo-clean apollo-clean-all audiofix-kernel audiofix-clean audiofix-clean-all
+.PHONY: push setup help check-tools cs614 rocm-env rocm-kernel apollo-kernel apollo-clean apollo-clean-all audiofix-kernel audiofix-clean audiofix-clean-all clean-all-kernels TAR
 
 # Default commit message if not provided
 MESSAGE ?= "Update repository"
@@ -25,25 +25,30 @@ ifeq ($(UNAME_S),Unknown)
     endif
 endif
 
+# Default target - if TAR is set, build PDF; otherwise show help
+.DEFAULT_GOAL := help
+
 help:
-	@echo "=========================================="
-	@echo "CS 614 - Makefile Commands"
-	@echo "=========================================="
-	@echo ""
-	@echo "Available targets:"
-	@echo "  make setup              - Set up conda environment (auto-detects OS)"
-	@echo "  make cs614-kernel       - Register Jupyter kernel 'Python (cs614)' for HW4 (torchvision detection)"
-	@echo "  make push               - Commit and push changes (uses default message)"
-	@echo "  make push MESSAGE=\"msg\" - Commit and push with custom message"
-	@echo "  make check-gpu          - Check GPU availability"
-	@echo "  make apollo-kernel      - Create Jupyter kernel for Apollo (Applications/apollo.ipynb)"
-	@echo "  make apollo-clean       - Remove old Apollo env/kernel (after failed install)"
-	@echo "  make apollo-clean-all  - Full Apollo cleanup including /opt/apollo-env"
-	@echo "  make audiofix-kernel    - Create Jupyter kernel 'Python (audiofix)' for scratch/click pipeline in Applications/music.ipynb"
-	@echo "  make audiofix-clean     - Remove old 'audiofix' env/kernel (after failed install)"
-	@echo "  make audiofix-clean-all - Full audiofix cleanup including /opt/audiofix-env"
-	@echo "  make help               - Show this help message"
-	@echo ""
+	@if [ -n "$(TAR)" ]; then \
+		$(MAKE) TAR; \
+	else \
+		echo "CS 614 — make targets"; \
+		echo ""; \
+		echo "  setup              setup conda env"; \
+		echo "  cs614              setup + one kernel (rocm-pytorch GPU for all homework)"; \
+		echo "  push               commit & push (MESSAGE=\"...\" for custom)"; \
+		echo "  check-gpu          check GPU"; \
+		echo "  apollo-kernel      Apollo notebook kernel"; \
+		echo "  apollo-clean       remove Apollo env"; \
+		echo "  apollo-clean-all   full Apollo cleanup"; \
+		echo "  audiofix-kernel    audiofix notebook kernel"; \
+		echo "  audiofix-clean     remove audiofix env"; \
+		echo "  audiofix-clean-all full audiofix cleanup"; \
+		echo "  clean-all-kernels  uninstall all CS614 Jupyter kernels"; \
+		echo "  TAR=n              build PDF for Homework n (e.g., make TAR=4)"; \
+		echo "  help               this message"; \
+		echo ""; \
+	fi
 
 check-tools:
 	@echo "Checking required tools..."
@@ -78,12 +83,21 @@ setup: check-tools
 		bash $(SETUP_SCRIPT); \
 	fi
 
-cs614-kernel:
-	@bash scripts/install_cs614_kernel.sh
+# One target: setup env + unified kernel (rocm-pytorch GPU)
+cs614: check-tools setup rocm-env rocm-kernel
+	@echo ""
+	@echo "Done. Use kernel 'Python (rocm-pytorch GPU)' for all homework."
+
+rocm-env:
+	@bash scripts/setup_rocm_pytorch.sh
+
+rocm-kernel: rocm-env
+	@bash scripts/install_rocm_kernel.sh
 
 check-gpu:
 	@echo "Checking GPU availability..."
-	@conda run -n cs614 python scripts/check_gpu.py 2>/dev/null || \
+	@conda run -n rocm-pytorch python scripts/check_gpu.py 2>/dev/null || \
+	conda run -n cs614 python scripts/check_gpu.py 2>/dev/null || \
 	python3 scripts/check_gpu.py 2>/dev/null || \
 	python scripts/check_gpu.py || \
 	(echo "Error: Could not run check_gpu.py. Make sure:"; \
@@ -109,6 +123,9 @@ audiofix-clean:
 audiofix-clean-all:
 	@$(MAKE) -C Applications audiofix-clean-all
 
+clean-all-kernels:
+	@bash scripts/clean_all_kernels.sh
+
 push:
 	@echo "Staging all changes..."
 	@git add -A
@@ -120,3 +137,22 @@ push:
 		echo "  2. Set up the remote: git remote add origin <your-repo-url>"; \
 		exit 1)
 	@echo "Successfully pushed to GitHub!"
+
+# Build PDF for Homework n: make TAR=n
+# Usage: make TAR=4 (or make TAR TAR=4)
+TAR:
+	@if [ -z "$(TAR)" ]; then \
+		echo "Error: TAR parameter is required"; \
+		echo "Usage: make TAR=n (e.g., make TAR=4)"; \
+		echo "   or: make TAR TAR=4"; \
+		exit 1; \
+	fi
+	@bash -c 'HW_DIR="Homework $(TAR)"; \
+	TEX_FILE="$$HW_DIR/HW$(TAR)_Technical_Report.tex"; \
+	if [ ! -f "$$TEX_FILE" ]; then \
+		echo "Error: LaTeX file not found: $$TEX_FILE"; \
+		echo "Expected file: $$TEX_FILE"; \
+		exit 1; \
+	fi; \
+	echo "Building PDF for Homework $(TAR)..."; \
+	bash scripts/build_pdf.sh "$$TEX_FILE"'
