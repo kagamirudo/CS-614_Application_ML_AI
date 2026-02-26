@@ -1,0 +1,13 @@
+#!/bin/sh
+# After git pull: clean notebooks that were updated (e.g. from Colab) so GitHub can render them.
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+CHANGED="$(git diff --name-only ORIG_HEAD HEAD 2>/dev/null | grep -E '\.ipynb$' || true)"
+if [ -n "$CHANGED" ]; then
+  echo "post-merge: cleaning notebooks changed by merge..."
+  for f in $CHANGED; do
+    [ -f "$ROOT/$f" ] && python3 "$ROOT/scripts/clean_notebook_widgets.py" "$ROOT/$f" 2>/dev/null || true
+  done
+fi
+exit 0

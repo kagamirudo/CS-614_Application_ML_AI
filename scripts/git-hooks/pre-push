@@ -1,0 +1,9 @@
+#!/bin/sh
+# Before git push: clean all notebooks so we never push Colab/widgets metadata to GitHub.
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+if [ -x "$ROOT/scripts/clean_notebook_widgets.py" ] || command -v python3 >/dev/null 2>&1; then
+  python3 "$ROOT/scripts/clean_notebook_widgets.py" 2>/dev/null || true
+fi
+exit 0
