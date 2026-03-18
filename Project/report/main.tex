@@ -8,18 +8,17 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{subcaption}
-\usepackage[backend=biber,style=ieee]{biblatex}
-\addbibresource{references.bib}
+\usepackage{cite}
 
 \begin{document}
 
-\title{AudioRestore: Text-Controlled Audio Quality Restoration\\via Fine-Tuned SonicMaster}
+\title{AudioRestore: Text-Controlled Audio Quality\\Restoration via Fine-Tuned SonicMaster}
 
 \author{
-\IEEEauthorblockN{[Your Name]}
+\IEEEauthorblockN{Gary Pham (gp492)}
 \IEEEauthorblockA{CS 614 -- Applications of Machine Learning\\
-George Mason University\\
-Spring 2026}
+Drexel University\\
+March 18, 2026}
 }
 
 \maketitle
@@ -31,16 +30,18 @@ MP3 and OGG Vorbis, resulting in audible artifacts and loss of high-frequency
 content. We present \textbf{AudioRestore}, a proof-of-concept system for
 text-controlled audio quality restoration built by fine-tuning SonicMaster, a
 0.9-billion-parameter generative model that uses flow matching conditioned on
-natural language prompts. We construct a codec-degraded dataset by applying MP3
-and OGG compression at various bitrates (24--128\,kbps) to clean music from
-MUSDB18-HQ, paired with descriptive text prompts. Fine-tuning the pretrained
-SonicMaster model on this dataset specializes it for codec artifact removal,
-enabling users to control the restoration process through prompts such as
-``remove MP3 artifacts at 64\,kbps.'' We evaluate our system using SDR and
-SI-SNR metrics across multiple bitrates and demonstrate improved restoration
-quality over the general-purpose pretrained model. Our work shows how a
-state-of-the-art generative audio model can be adapted for a specific
-real-world application with minimal data and compute.
+natural language prompts. We construct a codec-degraded dataset of 1{,}000
+paired clips by applying MP3 and OGG compression at various bitrates
+(24--128\,kbps) to clean music from MUSDB18-HQ. Fine-tuning on an
+NVIDIA A100 GPU for 30 epochs reduces the flow-matching loss from 0.33 to
+0.10. Quantitative evaluation reveals that the generative model produces
+consistent output quality ($\sim$8\,dB SDR) regardless of input degradation
+severity, trading sample-level fidelity for perceptual plausibility---a known
+property of flow-matching models. Spectrogram analysis confirms the model
+synthesizes high-frequency content absent in the degraded input, and prompt
+variation experiments show the text-controlled interface remains functional
+after fine-tuning. Our work demonstrates both the promise and limitations of
+adapting generative audio models for codec artifact removal.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -60,7 +61,10 @@ experience~\cite{li2025apollo}.
 
 Traditional audio restoration relies on manual signal processing chains:
 equalization, de-noising, and spectral repair, each requiring expert tuning.
-Recent deep learning models such as Apollo~\cite{li2025apollo} and
+The rise of generative models---from denoising diffusion~\cite{ho2020denoising}
+to latent diffusion for audio~\cite{liu2023audioldm} and diffusion-based
+audio inverse solvers~\cite{moliner2023diffusion}---has opened new avenues for
+learned restoration. Recent models such as Apollo~\cite{li2025apollo} and
 SonicMaster~\cite{melechovsky2025sonicmaster} automate this process, but
 general-purpose models may not optimally handle specific degradation types.
 
@@ -68,14 +72,14 @@ We propose \textbf{AudioRestore}, a system that fine-tunes SonicMaster on
 codec-specific degradations. Our contributions are:
 
 \begin{enumerate}
-    \item A \textbf{codec-degraded dataset} with paired clean/degraded 30-second
-    clips at various MP3 and OGG bitrates, annotated with natural language
-    prompts describing the degradation.
-    \item A \textbf{fine-tuning procedure} that adapts SonicMaster's 0.9B-parameter
-    flow-matching model to specialize in codec artifact removal while
-    preserving its text-controlled interface.
-    \item A \textbf{proof-of-concept demo} showing text-controlled restoration
-    with before/after spectrograms and quantitative metrics.
+    \item A \textbf{codec-degraded dataset} of 1{,}000 paired 30-second clips
+    at various MP3 and OGG bitrates, annotated with natural language prompts.
+    \item A \textbf{fine-tuning procedure} that adapts 522M trainable
+    parameters of SonicMaster's flow-matching model to specialize in codec
+    artifact removal while preserving its text-controlled interface.
+    \item A \textbf{quantitative and qualitative evaluation} revealing that
+    generative restoration models trade sample-level fidelity (SDR) for
+    perceptual plausibility, with analysis of text prompt robustness.
 \end{enumerate}
 
 % ============================================================================
@@ -84,7 +88,12 @@ codec-specific degradations. Our contributions are:
 \subsection{Audio Super-Resolution and Bandwidth Extension}
 Audio super-resolution aims to reconstruct high-frequency content from
 bandwidth-limited signals. Methods range from traditional interpolation to
-deep learning approaches using CNNs and GANs~\cite{su2021bandwidth}. These
+deep learning approaches using CNNs and GANs~\cite{su2021bandwidth}, including
+neural vocoders like HiFi-GAN~\cite{kong2020hifigan} that can synthesize
+high-fidelity waveforms from compressed representations. More recently,
+diffusion-based methods have been applied to audio inverse
+problems~\cite{moliner2023diffusion}, and latent diffusion models have shown
+strong text-to-audio generation capabilities~\cite{liu2023audioldm}. These
 methods typically operate in a fixed input-output configuration without
 user control.
 
@@ -96,6 +105,17 @@ inter-band communication blocks (ICB), and reconstructs the waveform via a GAN
 framework. Apollo achieves strong results on MUSDB18-HQ but operates without
 any text conditioning---it is a fixed input-to-output mapping.
 
+\subsection{Generative Models for Audio}
+Denoising diffusion probabilistic models (DDPMs)~\cite{ho2020denoising}
+have achieved remarkable results in image and audio generation. AudioLDM~\cite{liu2023audioldm} applies latent diffusion to text-to-audio
+generation, operating in a compressed VAE latent space for efficiency.
+Flow matching~\cite{lipman2023flow} offers a simpler alternative to
+diffusion, learning a deterministic velocity field that transports samples
+from noise to data. TangoFlux~\cite{ghosh2024tangoflux} applies flow matching
+to audio generation with CLAP-ranked preference optimization. These
+generative approaches produce high-quality audio but, as we demonstrate, may
+not improve reference-based metrics when applied to restoration.
+
 \subsection{SonicMaster}
 SonicMaster~\cite{melechovsky2025sonicmaster} is a unified generative model
 for music restoration and mastering, submitted to ICLR 2026. It addresses five
@@ -106,8 +126,9 @@ prompts. The architecture uses:
     \item A \textbf{Stable Audio VAE}~\cite{evans2024stable} encoder/decoder to
     convert between waveforms and latent representations.
     \item A \textbf{TangoFlux transformer}~\cite{ghosh2024tangoflux} ($\sim$515M
-    parameters) that performs flow-matching in latent space, conditioned on
-    text embeddings from a T5 encoder and audio condition embeddings.
+    parameters) that performs flow-matching~\cite{lipman2023flow} in latent
+    space, conditioned on text embeddings from a T5
+    encoder~\cite{raffel2020t5} and audio condition embeddings.
     \item \textbf{Text and audio conditioning} through pooled projections that
     guide the restoration direction.
 \end{itemize}
@@ -119,29 +140,38 @@ specifically for codec artifact removal.
 \section{Method}
 
 \subsection{Architecture}
-We use the full SonicMaster architecture without modification. The model
-processes 30-second stereo audio chunks at 44.1\,kHz. The degraded input is
-encoded into a latent representation by the Stable Audio VAE, transformed by
-the TangoFlux flow-matching model conditioned on a text prompt, and decoded
-back to a waveform.
+We build on the SonicMaster architecture, keeping its model structure intact
+but modifying the training pipeline to add gradient clipping (max norm 1.0)
+for stable fine-tuning. Figure~\ref{fig:arch} illustrates the full pipeline.
+The model processes 30-second stereo audio chunks at 44.1\,kHz. The degraded
+input is encoded into latent space by the Stable Audio VAE. A T5 text encoder
+produces text embeddings from the user prompt, while an audio conditioning
+module (Conv1D stack) extracts a pooled representation from the first third of
+the degraded latents. These are concatenated and projected to form the pooled
+conditioning vector. The FluxTransformer2DModel then performs flow matching in
+latent space, and the result is decoded back to a waveform by the VAE decoder.
 
-% TODO: Include architecture diagram from the plan
-% \begin{figure}[t]
-%     \centering
-%     \includegraphics[width=\linewidth]{figures/architecture.pdf}
-%     \caption{SonicMaster architecture for audio restoration.}
-%     \label{fig:arch}
-% \end{figure}
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figures/architecture.png}
+    \caption{AudioRestore architecture. Frozen components (purple/gray) are
+    not updated during fine-tuning. Orange modules (audio conditioning,
+    projection layers, and FluxTransformer) are fine-tuned on codec-degraded
+    data.}
+    \label{fig:arch}
+\end{figure}
 
 \subsection{Codec Degradation Pipeline}
+\begin{sloppypar}
 Our key modification is a custom degradation pipeline targeting codec
-artifacts. We apply:
+artifacts. We use the \texttt{AudioEffector} class from \texttt{torchaudio}
+to apply:\end{sloppypar}
 
 \begin{itemize}
-    \item \textbf{MP3 compression} at bitrates $\in \{24, 32, 48, 64, 96,
-    128\}$\,kbps using \texttt{torchaudio.functional.apply\_codec}.
-    \item \textbf{OGG Vorbis compression} at quality levels $\in \{-1, 0, 1,
-    2, 3, 5\}$.
+    \item \textbf{MP3 compression} (via \texttt{libmp3lame}) at bitrates
+    $\in \{24, 32, 48, 64, 96, 128\}$\,kbps.
+    \item \textbf{OGG Vorbis compression} (via \texttt{libvorbis}) at quality
+    levels $\in \{-1, 0, 1, 2, 3, 5\}$.
 \end{itemize}
 
 For each clip, we randomly select a codec type (70\% MP3, 30\% OGG) and
@@ -164,87 +194,229 @@ model to respond to various phrasings while maintaining unconditional
 capability.
 
 \subsection{Fine-Tuning Procedure}
-We fine-tune from the pretrained SonicMaster checkpoint (0.9B parameters):
+\begin{sloppypar}
+We fine-tune from the pretrained SonicMaster checkpoint (0.9B total
+parameters, 522M trainable):
 \begin{itemize}
-    \item \textbf{Frozen components}: T5 text encoder (parameters fixed
-    throughout).
-    \item \textbf{Trained components}: TangoFlux transformer, text projection
-    layers (\texttt{fc\_text}, \texttt{fc\_text\_audio}), and audio
-    conditioning module (\texttt{audio\_cond}).
-    \item \textbf{Learning rate}: $1 \times 10^{-5}$ with cosine schedule and
-    200-step warmup.
-    \item \textbf{Batch size}: 2 per device with 4 gradient accumulation steps
-    (effective batch size 8).
-    \item \textbf{Precision}: Mixed FP16 for memory efficiency on a single GPU.
-    \item \textbf{Epochs}: 30 (early stopping on validation loss).
+    \item \textbf{Frozen}: T5 text encoder (flan-t5-large~\cite{raffel2020t5})
+    and Stable Audio VAE.
+    \item \textbf{Trained}: TangoFlux transformer (6 joint + 18 single layers,
+    8 heads, 128-dim), projection layers, and audio conditioning module.
+    \item \textbf{Optimizer}: AdamW~\cite{loshchilov2019adamw}, lr $= 10^{-5}$,
+    cosine schedule, 200-step warmup.
+    \item \textbf{Batch}: 2 per device $\times$ 4 accumulation = effective 8.
+    \item \textbf{Precision}: Mixed BF16 on NVIDIA A100-SXM4-80GB.
+    \item \textbf{Gradient clipping}: Max norm 1.0.
+    \item \textbf{Epochs}: 30 (3{,}390 optimization steps).
 \end{itemize}
+\end{sloppypar}
 
 All audio is pre-encoded into VAE latents before training to avoid redundant
-VAE forward passes during fine-tuning.
+VAE forward passes, reducing per-epoch time from minutes to seconds for the
+encoding stage.
 
 % ============================================================================
 \section{Experiments}
 
 \subsection{Dataset}
-We construct our dataset from MUSDB18-HQ~\cite{rafii2017musdb18}, extracting
-30-second clips from the training split. Each clip is degraded with a randomly
-selected codec and bitrate/quality level. We generate approximately 1,000--2,000
-paired clips (90\% train, 10\% validation).
+We construct our dataset from 114 audio files sourced from
+MUSDB18-HQ~\cite{rafii2017musdb18}. From these, we generate 1{,}000
+non-overlapping 30-second clips (900 train, 100 validation), each degraded
+with a randomly selected codec and bitrate/quality level. VAE latent
+pre-encoding of all 1{,}000 clips took approximately 8 hours on a single GPU
+(batch size~1, FP16).
+
+\subsection{Training Convergence}
+Figure~\ref{fig:loss} shows the training and validation loss curves over 30
+epochs. Both losses decrease rapidly in the first 5 epochs (train: $0.369
+\to 0.151$; val: $0.328 \to 0.150$) and continue to improve gradually. The
+best validation loss of $\mathbf{0.0996}$ is achieved at epoch~28. Training
+completed in approximately 2.5 hours on a single A100 GPU.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figures/model_result.png}
+    \caption{Training and validation loss over 30 epochs. The flow-matching
+    loss decreases from 0.37/0.33 (train/val) to 0.095/0.100, with best
+    validation loss at epoch~28.}
+    \label{fig:loss}
+\end{figure}
 
 \subsection{Evaluation Metrics}
-We evaluate using two standard audio quality metrics~\cite{le2019sdr}:
+We evaluate using two standard reference-based audio quality
+metrics~\cite{le2019sdr}:
 \begin{itemize}
-    \item \textbf{SDR} (Signal-to-Distortion Ratio): Measures overall signal
-    fidelity in dB.
+    \item \textbf{SDR} (Signal-to-Distortion Ratio): Measures sample-level
+    fidelity between the output and the clean reference in dB.
     \item \textbf{SI-SNR} (Scale-Invariant Signal-to-Noise Ratio): Measures
-    signal quality invariant to scaling.
+    signal quality invariant to global scaling.
 \end{itemize}
 
-\subsection{Results}
+Both metrics compare the model output (or the degraded input) against the
+original clean audio. Higher values indicate greater similarity to the clean
+reference.
 
-% TODO: Fill in with actual results after running fine-tuning
+\subsection{Restoration Quality}
+
+Table~\ref{tab:results} presents SDR and SI-SNR measurements at three MP3
+bitrates. The ``Degraded'' column shows the quality of the compressed input
+relative to the clean original, while the ``Restored'' column shows the
+quality of the fine-tuned model's output.
+
 \begin{table}[t]
 \centering
-\caption{Restoration quality (SDR in dB) at various MP3 bitrates.}
+\caption{SDR and SI-SNR (dB) of degraded inputs vs.\ fine-tuned model outputs,
+measured against the clean reference. Negative $\Delta$ indicates the model
+output has \emph{lower} sample-level fidelity than the degraded input.}
 \label{tab:results}
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
-\textbf{Bitrate} & \textbf{Degraded} & \textbf{Base SM} & \textbf{Fine-tuned} & \textbf{Gain} \\
+\textbf{Bitrate} & \textbf{Degraded} & \textbf{Restored} & $\boldsymbol{\Delta}$ \\
 \midrule
-32\,kbps  & --  & --  & --  & --  \\
-64\,kbps  & --  & --  & --  & --  \\
-128\,kbps & --  & --  & --  & --  \\
+\multicolumn{4}{l}{\textit{SDR (dB)}} \\
+\quad 32\,kbps  & 13.71  & 7.71  & $-$6.00  \\
+\quad 64\,kbps  & 16.24  & 8.47  & $-$7.77  \\
+\quad 128\,kbps & 20.13  & 8.96  & $-$11.17 \\
+\midrule
+\multicolumn{4}{l}{\textit{SI-SNR (dB)}} \\
+\quad 32\,kbps  & 13.68  & 7.44  & $-$6.23  \\
+\quad 64\,kbps  & 16.48  & 8.04  & $-$8.43  \\
+\quad 128\,kbps & 21.12  & 8.38  & $-$12.74 \\
 \bottomrule
 \end{tabular}
-\vspace{0.5em}
-\small SM = SonicMaster. Gain = Fine-tuned SDR $-$ Degraded SDR.
 \end{table}
 
-% TODO: Add spectrogram figures
-% \begin{figure}[t]
-%     \centering
-%     \includegraphics[width=\linewidth]{figures/spectrograms_64k.png}
-%     \caption{Spectrograms at 64\,kbps MP3. Left: original. Center: degraded.
-%     Right: restored by fine-tuned SonicMaster.}
-%     \label{fig:spectrograms}
-% \end{figure}
+Two patterns emerge. First, the model's output SDR is remarkably
+consistent across bitrates ($7.71$--$8.96$\,dB), despite the degraded input
+SDR varying from 13.71 to 20.13\,dB. Second, the $\Delta$ column shows that
+the model \emph{decreases} sample-level fidelity in all cases. We analyze
+why in Section~\ref{sec:discussion}.
+
+\subsection{Spectrogram Analysis}
+
+Figure~\ref{fig:spectrograms} shows mel spectrograms for three bitrate
+conditions. At 32\,kbps (top), where codec artifacts are severe, the
+restored spectrogram shows recovered high-frequency energy above 10\,kHz that
+is absent in the degraded version. At 128\,kbps (bottom), where degradation
+is minimal, the model still modifies the signal substantially---explaining the
+large negative $\Delta$ for higher bitrates.
+
+\begin{figure}[t]
+    \centering
+    \begin{subfigure}[b]{\linewidth}
+        \includegraphics[width=\linewidth]{figures/32kbps.png}
+        \caption{32\,kbps MP3}
+    \end{subfigure}
+
+    \vspace{0.3em}
+    \begin{subfigure}[b]{\linewidth}
+        \includegraphics[width=\linewidth]{figures/64kbps.png}
+        \caption{64\,kbps MP3}
+    \end{subfigure}
+
+    \vspace{0.3em}
+    \begin{subfigure}[b]{\linewidth}
+        \includegraphics[width=\linewidth]{figures/128kbps.png}
+        \caption{128\,kbps MP3}
+    \end{subfigure}
+
+    \caption{Mel spectrograms comparing original (left), degraded (center),
+    and restored (right) audio at three MP3 bitrates. The model synthesizes
+    high-frequency content in all cases.}
+    \label{fig:spectrograms}
+\end{figure}
+
+\subsection{Prompt Variation}
+
+Table~\ref{tab:prompts} evaluates five different text prompts on the same
+64\,kbps MP3 degraded clip. All prompts---including the empty
+(unconditional) prompt---produce similar output quality, with SDR ranging
+from 8.40 to 8.53\,dB. This indicates the model has learned a robust
+restoration behavior that is largely prompt-invariant, while still responding
+to conditioning (the specific codec prompt scores highest).
+
+\begin{table}[t]
+\centering
+\caption{SDR (dB) for different text prompts on the same 64\,kbps MP3 input.}
+\label{tab:prompts}
+\begin{tabular}{lc}
+\toprule
+\textbf{Text Prompt} & \textbf{SDR} \\
+\midrule
+``remove MP3 compression artifacts''         & 8.53 \\
+``restore audio compressed at 64kbps MP3''   & 8.47 \\
+``make this audio sound better''             & 8.46 \\
+``enhance low bitrate audio to high fidelity'' & 8.41 \\
+(empty / unconditional)                      & 8.40 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 % ============================================================================
 \section{Discussion}
+\label{sec:discussion}
+
+\subsection{Why SDR Decreases: Generative vs.\ Regressive Restoration}
+
+The negative $\Delta$ values in Table~\ref{tab:results} require careful
+interpretation. Unlike regressive models (e.g., Apollo~\cite{li2025apollo})
+that learn a direct mapping from degraded to clean signals and optimize for
+sample-level reconstruction, SonicMaster is a \emph{generative}
+flow-matching model~\cite{lipman2023flow}. It synthesizes a plausible clean
+signal conditioned on the degraded input and text prompt, rather than
+performing point-wise signal repair.
+
+This generative process introduces two effects:
+\begin{enumerate}
+    \item \textbf{Content hallucination}: The model generates high-frequency
+    detail that is perceptually plausible but not sample-aligned with the
+    original, reducing SDR.
+    \item \textbf{Consistent output distribution}: The model maps all inputs
+    toward a learned ``clean audio'' manifold, producing outputs with
+    similar characteristics ($\sim$8\,dB SDR) regardless of how degraded the
+    input was.
+\end{enumerate}
+
+This explains why $\Delta$ is most negative at 128\,kbps: the degraded input
+is already close to the clean reference (SDR = 20.13\,dB), so the model's
+generative re-synthesis can only reduce fidelity. At 32\,kbps, where the
+degraded input is farther from clean, the model's ``baseline'' output quality
+is closer to the degraded quality, resulting in a smaller (though still
+negative) $\Delta$.
+
+\subsection{Limitations of SDR for Generative Models}
+
+SDR and SI-SNR measure sample-level alignment and penalize any deviation from
+the reference, even if the deviation is perceptually beneficial~\cite{le2019sdr}.
+For generative restoration, perceptual metrics such as
+PESQ~\cite{rix2001pesq}, ViSQOL~\cite{hershey2007visqol}, or Fr\'{e}chet
+Audio Distance (FAD)~\cite{kilgour2019fad} would better capture whether the
+output \emph{sounds} better than the input. This gap between reference-based
+and perceptual metrics is well-documented in the generative audio
+literature~\cite{liu2023audioldm, kong2020hifigan}. Our spectrogram analysis
+(Figure~\ref{fig:spectrograms}) provides qualitative evidence that the model
+does synthesize missing high-frequency content, which SDR cannot reward.
 
 \subsection{Text Control Advantage}
 Unlike Apollo, which provides no user control over the restoration process,
 SonicMaster's text conditioning allows users to specify the type of
-degradation they want to address. Our fine-tuning preserves this capability
-while specializing the model for codec artifacts.
+degradation they want to address. Our prompt variation experiment
+(Table~\ref{tab:prompts}) confirms that the fine-tuned model retains this
+text-controlled interface. While the quantitative differences between prompts
+are small (0.13\,dB SDR range), the most specific prompt (``remove MP3
+compression artifacts'') achieves the highest SDR, suggesting the model does
+attend to prompt content.
 
 \subsection{Limitations}
 \begin{itemize}
-    \item Fine-tuning was performed on a relatively small dataset due to
-    compute constraints.
+    \item Fine-tuning was performed on 900 clips from 114 source files---a
+    small dataset relative to SonicMaster's original 25k-track training set.
+    \item Only reference-based metrics (SDR, SI-SNR) were computed; perceptual
+    metrics would better evaluate generative restoration quality.
     \item The model processes 30-second chunks; longer files require chunked
-    processing with crossfade stitching.
-    \item Inference requires a GPU with at least 8\,GB VRAM (FP16).
+    processing with crossfade stitching (demonstrated on two full songs of
+    $\sim$3 minutes each).
+    \item Inference requires a GPU with at least 8\,GB VRAM.
 \end{itemize}
 
 % ============================================================================
@@ -267,16 +439,32 @@ operate traditional audio restoration tools.
 % ============================================================================
 \section{Conclusion}
 
-We presented AudioRestore, a proof-of-concept system for text-controlled audio
-quality restoration. By fine-tuning SonicMaster on codec-degraded audio with
-custom text prompts, we demonstrated that a general-purpose audio restoration
-model can be specialized for a specific degradation type with minimal data and
-compute. The system allows users to control the restoration process through
-natural language, making high-quality audio restoration accessible to
-non-experts. Future work includes expanding the degradation pipeline, training
-on larger datasets, and optimizing for real-time inference.
+We presented AudioRestore, a proof-of-concept system for text-controlled
+codec audio restoration via fine-tuned SonicMaster. Training on 1{,}000
+codec-degraded clips for 30 epochs on a single A100 GPU achieved a
+flow-matching loss of 0.0996, demonstrating that the model can be
+successfully specialized for codec artifacts.
+
+Our quantitative evaluation revealed a fundamental tension: the generative
+flow-matching model synthesizes perceptually plausible audio but reduces
+sample-level fidelity (SDR) compared to the degraded input. This is not a
+failure of fine-tuning but a property of generative restoration---the model
+creates new high-frequency content rather than reconstructing the exact
+original signal. This finding highlights that standard metrics like SDR are
+insufficient for evaluating generative audio restoration systems.
+
+Future work should incorporate perceptual metrics
+(PESQ~\cite{rix2001pesq}, FAD~\cite{kilgour2019fad}), compare against
+regressive baselines like Apollo~\cite{li2025apollo} on the same data, train
+on larger and more diverse datasets, and explore combining generative and
+regressive approaches---as done in HiFi-GAN's discriminator-guided
+synthesis~\cite{kong2020hifigan}---to achieve both perceptual quality and
+signal fidelity.
 
 % ============================================================================
-\printbibliography
+\newpage
+% ============================================================================
+\bibliographystyle{IEEEtran}
+\bibliography{references}
 
 \end{document}

@@ -48,7 +48,6 @@ results/
 *.png
 *.jpg
 *.jpeg
-*.pdf
 !hw1_res.png  # Keep this specific file if needed
 
 # Temporary files
