@@ -1,6 +1,8 @@
 # CS 614 - Applications of Machine Learning
 
-This repository contains assignments and projects for CS 614 - Applications of Machine Learning.
+**Drexel University -- Gary Pham (gp492)**
+
+This repository contains assignments and the final project for CS 614 - Applications of Machine Learning.
 
 ## Contents
 
@@ -9,65 +11,47 @@ This repository contains assignments and projects for CS 614 - Applications of M
 - **Homework 3/**: Programming Assignment 3 - Transfer learning (ResNet18 on CIFAR-10), with technical document and saved figures
 - **Homework 4/**: Object detection with Faster R-CNN (torchvision)
 - **Homework 6/**: Transformer blocks (BERT-style encoder from scratch)
-- **Applications/**: Apollo music restoration – input a compressed track (e.g. MP3), output restored WAV. See [Applications/README.md](Applications/README.md) for setup, model theory, and Git notes
+- **Applications/**: Apollo music restoration -- input a compressed track (e.g. MP3), output restored WAV. See [Applications/README.md](Applications/README.md)
+- **Project/**: **AudioRestore** -- Text-controlled audio quality restoration via fine-tuned SonicMaster (0.9B params). See [Project/README.md](Project/README.md)
+
+## Final Project: AudioRestore
+
+Fine-tuned [SonicMaster](https://github.com/AMAAI-Lab/SonicMaster) on codec-degraded audio
+(MP3/OGG at 24--128 kbps) for text-controlled restoration. Trained 522M parameters for 30
+epochs on A100, achieving val loss 0.0996. Key finding: generative flow-matching models trade
+sample-level fidelity for perceptual plausibility (~8 dB SDR output regardless of input quality).
+
+- `Project/train_colab.ipynb` -- Full training pipeline (Colab or local)
+- `Project/demo.ipynb` -- Inference demo with spectrograms and metrics
+- `Project/report/` -- LaTeX report (`make pdf` to build)
 
 ## Quick Start
 
 ### Prerequisites
-
-Check if you have all requirements:
 
 ```bash
 bash scripts/check_requirements.sh
 ```
 
 Required tools:
-- [Make](https://www.gnu.org/software/make/) installed
-  - **Linux/Mac**: Usually pre-installed. If not: `sudo apt-get install make` (Linux) or `xcode-select --install` (Mac)
-  - **Windows**: Install via [Chocolatey](https://chocolatey.org/) (`choco install make`) or [GnuWin32](http://gnuwin32.sourceforge.net/packages/make.htm)
-- [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution) installed
-- Git installed
-
-**Note**: If you don't have `make` installed, you can still run the setup scripts directly:
-- Linux/Mac: `bash scripts/setup_environment.sh`
-- Windows: `powershell -ExecutionPolicy Bypass -File scripts/setup_environment.ps1`
+- [Make](https://www.gnu.org/software/make/)
+- [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution)
+- Git
 
 ### Environment Setup
-
-**Easy way (auto-detects OS):**
 
 ```bash
 make setup
 ```
 
-This will:
-- Auto-detect your operating system (Linux/Mac/Windows)
-- Run the appropriate setup script
-- Check for required tools (conda, Python)
-- Guide you through GPU selection if needed
+This will auto-detect your OS, create a `cs614` conda environment with Python 3.13,
+and prompt for GPU support (CPU / NVIDIA CUDA / AMD ROCm).
 
-**Manual way:**
-
+**Manual alternative:**
 - **Linux/Mac**: `bash scripts/setup_environment.sh`
 - **Windows**: `powershell -ExecutionPolicy Bypass -File scripts/setup_environment.ps1`
 
-This will:
-1. Create a conda environment named `cs614` with Python 3.13
-2. Ask you to select GPU support:
-   - **CPU only** (default, works everywhere)
-   - **NVIDIA GPU** (CUDA)
-   - **AMD GPU** (ROCm)
-3. Install all required packages:
-   - PyTorch (with appropriate GPU support if selected)
-   - torchvision
-   - matplotlib
-   - numpy
-   - seaborn
-   - scikit-learn
-
 ### Activating the Environment
-
-After setup, activate the environment:
 
 ```bash
 conda activate cs614
@@ -75,153 +59,82 @@ conda activate cs614
 
 ### GPU Support
 
-#### Checking GPU Availability
-
-After setup, check if your GPU is detected:
-
 ```bash
-# Using Makefile (recommended)
-make check-gpu
-
-# Or manually
-conda activate cs614
-python scripts/check_gpu.py
+make check-gpu    # or: python scripts/check_gpu.py
 ```
 
-This script will show:
-- PyTorch version
-- CUDA (NVIDIA) availability and GPU info
-- ROCm (AMD) availability and GPU info
-- Device recommendations
-
-#### Using GPU in Your Code
-
-If GPU is available, you can use it in your notebooks:
-
-```python
-import torch
-
-# Check if CUDA is available
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f'Using device: {device}')
-
-# Move tensors/models to GPU
-model = model.to(device)
-images = images.to(device)
-```
-
-#### AMD GPU (ROCm) Notes
-
-- **Linux**: ROCm support is available. Check [PyTorch ROCm compatibility](https://pytorch.org/get-started/locally/) for your GPU model.
-- **Windows**: ROCm is not officially supported on Windows. Options:
-  - Use CPU version (slower but works)
-  - Use WSL2 with ROCm support
-  - Check for community builds or alternative solutions
-
-For AMD GPUs (e.g. RX 6600 XT), you may need to install PyTorch with ROCm manually or use the project scripts:
+For AMD GPUs (ROCm):
 ```bash
-# Option 1: Use project scripts (ROCm 5.7, Python 3.11)
 bash scripts/setup_rocm_pytorch.sh   # Creates env at /opt/rocm-pytorch
-bash scripts/install_rocm_kernel.sh  # Registers "Python (rocm-pytorch GPU)" Jupyter kernel
-# Then select that kernel in Jupyter for HW3 (uses gfx1032 workaround via rocm_kernel_wrapper.sh).
-
-# Option 2: Visit https://pytorch.org/get-started/locally/ and select:
-# - OS: Linux, Package: Pip, Compute Platform: ROCm (your version)
+bash scripts/install_rocm_kernel.sh  # Registers Jupyter kernel
 ```
 
 ### Running the Notebooks
 
-1. Activate the conda environment
-2. Start Jupyter:
-   ```bash
-   jupyter notebook
-   ```
-3. Navigate to and open the desired notebook:
-   - `Homework 1/HW1.ipynb` - Assignment 1
-   - `Homework 2/HW2.ipynb` - Assignment 2
-   - `Homework 3/HW3.ipynb` - Assignment 3 (ResNet18 fine-tuning on CIFAR-10)
-   - `Homework 4/HW4.ipynb` - Assignment 4 (Faster R-CNN object detection)
-   - `Homework 6/Lecture.ipynb` - Transformer / BERT-style encoder
-   - `Applications/music.ipynb` - Apollo music restoration (run `make apollo-kernel` first; see [Applications/README.md](Applications/README.md))
+```bash
+conda activate cs614
+jupyter notebook
+```
+
+| Notebook | Topic |
+|----------|-------|
+| `Homework 1/HW1.ipynb` | Assignment 1 |
+| `Homework 2/HW2.ipynb` | CNN for MNIST |
+| `Homework 3/HW3.ipynb` | ResNet18 fine-tuning on CIFAR-10 |
+| `Homework 4/HW4.ipynb` | Faster R-CNN object detection |
+| `Homework 6/Lecture.ipynb` | Transformer / BERT-style encoder |
+| `Applications/music.ipynb` | Apollo music restoration |
+| `Project/train_colab.ipynb` | AudioRestore fine-tuning |
+| `Project/demo.ipynb` | AudioRestore demo + metrics |
 
 ## Repository Structure
 
 ```
 CS614/
-├── Makefile                # Main Makefile for all commands
-├── LICENSE                 # MIT License
-├── README.md               # This file
-├── .gitignore              # Git ignore file (excludes data files)
-├── Homework 1/              # Assignment 1
-│   └── HW1.ipynb
-├── Homework 2/              # Assignment 2
-│   └── HW2.ipynb
-├── Homework 3/              # Assignment 3 (transfer learning)
-│   ├── HW3.ipynb           # ResNet18 fine-tuning on CIFAR-10
-│   └── HW3_Technical_Document.md
-├── Homework 4/              # Assignment 4 (object detection)
-│   └── HW4.ipynb
-├── Homework 6/              # Transformer / BERT-style
-│   └── Lecture.ipynb
-├── Applications/            # Apollo music restoration
-│   ├── README.md           # Setup, model theory, Git (Apollo submodule)
-│   ├── music.ipynb         # Restore compressed audio → WAV
-│   ├── Apollo/             # Apollo model (look2hear)
-│   ├── Makefile            # apollo-kernel, apollo-clean
-│   └── create_apollo_kernel.sh / clean_apollo_env.sh
-├── scripts/                 # Setup and utility scripts
-│   ├── setup_environment.sh
-│   ├── setup_environment.ps1
-│   ├── check_gpu.py
-│   ├── check_requirements.sh
-│   ├── setup_rocm_pytorch.sh
-│   ├── rocm_kernel_wrapper.sh
-│   └── install_rocm_kernel.sh
-└── data/                    # Data directory (gitignored)
+├── Makefile                   # Main Makefile for all commands
+├── README.md                  # This file
+├── .gitignore
+├── Homework 1/                # Assignment 1
+├── Homework 2/                # Assignment 2 (CNN/MNIST)
+├── Homework 3/                # Assignment 3 (transfer learning)
+├── Homework 4/                # Assignment 4 (object detection)
+├── Homework 6/                # Transformer / BERT-style
+├── Applications/              # Apollo music restoration
+│   ├── README.md
+│   ├── music.ipynb
+│   └── Apollo/                # Apollo model (submodule)
+├── Project/                   # Final Project: AudioRestore
+│   ├── README.md              # Project-specific README
+│   ├── train_colab.ipynb      # Training pipeline
+│   ├── demo.ipynb             # Inference demo
+│   ├── sonicmaster/           # SonicMaster source
+│   ├── report/                # LaTeX report + figures
+│   │   ├── main.tex
+│   │   ├── references.bib
+│   │   ├── figures/
+│   │   └── Makefile           # make pdf / make clean
+│   ├── configs/               # Training configs
+│   ├── data/                  # Generated at runtime
+│   ├── checkpoints/           # Model weights
+│   └── outputs/               # Training outputs
+├── scripts/                   # Setup and utility scripts
+└── data/                      # Data directory (gitignored)
 ```
-
-## Pushing to GitHub
-
-1. **Create the repository on GitHub:**
-   - Go to https://github.com/new
-   - Repository name: `CS-614_Application_ML_AI`
-   - Choose private or public
-   - **DO NOT** initialize with README, .gitignore, or license (we already have these)
-   - Click "Create repository"
-
-2. **Set up the remote (first time only):**
-   ```bash
-   git remote add origin https://github.com/kagamirudo/CS-614_Application_ML_AI.git
-   ```
-
-3. **Push your code:**
-   ```bash
-   # Using Makefile (recommended)
-   make push                    # Uses default message
-   make push MESSAGE="Your commit message here"
-   
-   # Or manually
-   git add -A
-   git commit -m "Your message"
-   git push origin main
-   ```
 
 ## Available Make Commands
 
 ```bash
 make setup              # Set up conda environment (auto-detects OS)
 make check-gpu          # Check GPU availability
-make apollo-kernel      # Create Jupyter kernel for Apollo (Applications/music.ipynb)
-make apollo-clean       # Remove old Apollo env/kernel (after failed install)
-make apollo-clean-all   # Full Apollo cleanup including /opt/apollo-env
-make push               # Commit and push to GitHub (default message)
+make apollo-kernel      # Create Jupyter kernel for Apollo
+make apollo-clean       # Remove old Apollo env/kernel
+make push               # Commit and push to GitHub
 make push MESSAGE="msg" # Commit and push with custom message
 make help               # Show all available commands
 ```
 
 ## Notes
 
-- The `data/` directory is excluded from git to avoid committing large data files
-- Model checkpoints and temporary files are also excluded
+- The `data/` directory and model checkpoints are excluded from git
 - Run `make setup` before working on assignments
-- All scripts are organized in the `scripts/` folder for a clean root directory
+- For the final project, see [Project/README.md](Project/README.md) for detailed instructions
