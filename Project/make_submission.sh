@@ -14,9 +14,9 @@ echo "=== Building submission zip ==="
 rm -rf "$DEST" "$ZIP"
 mkdir -p "$DEST"
 
-# --- Copy demo_code.ipynb (already clean, no outputs) ---
-echo "Copying demo_code.ipynb..."
-cp demo_code.ipynb "$DEST/demo.ipynb"
+# --- Copy demo_submission.ipynb (slim, no outputs) ---
+echo "Copying demo_submission.ipynb..."
+cp demo_submission.ipynb "$DEST/demo.ipynb"
 echo "  demo.ipynb -> $(du -h "$DEST/demo.ipynb" | cut -f1)"
 
 # --- Copy notebooks ---

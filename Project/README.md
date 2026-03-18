@@ -33,21 +33,22 @@ Contents:
 - `checkpoints/` -- pretrained SonicMaster + fine-tuned weights (~3.6 GB)
 - `outputs/finetune_codec/best/` -- best checkpoint from training
 
-Both notebooks automatically mount Google Drive at `/content/drive/MyDrive/CS614_Project`
-when run in Colab. No manual download is needed -- just open in Colab and run.
+The notebooks automatically download what they need via `gdown` -- no manual setup required.
 
 ## Quick Start (Colab)
 
 1. Open `train_colab.ipynb` in Google Colab (A100 GPU recommended)
 2. Run all cells -- handles installation, data prep, fine-tuning, and loss curves
-3. Open `demo.ipynb` for inference, spectrograms, metrics, and prompt experiments
+3. Open `demo_submission.ipynb` for inference, spectrograms, metrics, and prompt experiments
+   *(slim version of `demo.ipynb` -- auto-downloads checkpoint and test audio via `gdown`)*
 
 ## Project Structure
 
 ```
 Project/
 ├── train_colab.ipynb          # Full pipeline: data prep -> fine-tune -> loss curves
-├── demo.ipynb                 # Inference demo: restoration + spectrograms + metrics
+├── demo_submission.ipynb      # Slim demo (16 KB, no outputs) -- for submission / review
+├── demo.ipynb                 # Full demo with outputs (106 MB, not in submission zip)
 ├── sonicmaster/               # SonicMaster source (cloned from AMAAI-Lab/SonicMaster)
 │   ├── model.py               # TangoFlux model definition
 │   ├── train_ptload_inference.py  # Training script (patched with grad clipping)
