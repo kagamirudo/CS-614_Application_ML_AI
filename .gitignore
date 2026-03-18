@@ -55,6 +55,7 @@ results/
 *.temp
 .cache/
 *.cache
+*.zip
 
 # OS files
 Thumbs.db

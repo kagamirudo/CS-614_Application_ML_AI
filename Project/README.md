@@ -22,6 +22,20 @@ confirm the model synthesizes high-frequency content absent in the degraded inpu
 - **Dataset**: 1,000 clips (900 train / 100 val) from 114 MUSDB18-HQ source files
 - **Trainable params**: 522M (T5 encoder + VAE frozen)
 
+## Data & Checkpoints (Google Drive)
+
+The dataset and model weights are hosted on Google Drive (not included in the zip):
+
+**[Google Drive Folder](https://drive.google.com/drive/folders/1eyxwTykveOsbY3XybfIVmWsd1kFF4AAJ?usp=sharing)**
+
+Contents:
+- `data/` -- 1,000 codec-degraded audio clips + pre-encoded VAE latents
+- `checkpoints/` -- pretrained SonicMaster + fine-tuned weights (~3.6 GB)
+- `outputs/finetune_codec/best/` -- best checkpoint from training
+
+Both notebooks automatically mount Google Drive at `/content/drive/MyDrive/CS614_Project`
+when run in Colab. No manual download is needed -- just open in Colab and run.
+
 ## Quick Start (Colab)
 
 1. Open `train_colab.ipynb` in Google Colab (A100 GPU recommended)
