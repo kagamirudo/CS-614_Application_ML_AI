@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-NAME="AudioRestore_submission"
+NAME="gp492_final"
 DEST="/tmp/$NAME"
 ZIP="$SCRIPT_DIR/$NAME.zip"
 
