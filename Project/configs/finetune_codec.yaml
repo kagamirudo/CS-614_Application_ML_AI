@@ -1,0 +1,25 @@
+model:
+  attention_head_dim: 128
+  audio_seq_len: 645
+  in_channels: 64
+  joint_attention_dim: 1024
+  max_duration: 30
+  num_attention_heads: 8
+  num_layers: 6
+  num_single_layers: 18
+  text_encoder_name: google/flan-t5-large
+  uncondition: false
+paths:
+  infer_file: /home/kagamirudo/CS614/Project/data/valset_pt.jsonl
+  output_dir: /home/kagamirudo/CS614/Project/outputs/finetune_codec
+  resume_from_checkpoint: ''
+  test_file: /home/kagamirudo/CS614/Project/data/valset_pt.jsonl
+  train_file: /home/kagamirudo/CS614/Project/data/trainset_pt.jsonl
+  val_file: /home/kagamirudo/CS614/Project/data/valset_pt.jsonl
+training:
+  gradient_accumulation_steps: 4
+  learning_rate: 1.0e-05
+  max_audio_duration: 30
+  num_train_epochs: 30
+  num_warmup_steps: 200
+  per_device_batch_size: 2
