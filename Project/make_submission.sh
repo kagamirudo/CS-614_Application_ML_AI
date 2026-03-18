@@ -31,11 +31,8 @@ cp -r sonicmaster "$DEST/sonicmaster"
 # --- Copy configs ---
 cp -r configs "$DEST/configs"
 
-# --- Copy report ---
-mkdir -p "$DEST/report"
-cp report/main.pdf "$DEST/report/" 2>/dev/null || echo "  Warning: main.pdf not found (run 'make pdf' in report/)"
-cp report/main.tex report/references.bib report/Makefile "$DEST/report/"
-cp -r report/figures "$DEST/report/figures"
+# --- Copy report (PDF only) ---
+cp report/main.pdf "$DEST/" 2>/dev/null || echo "  Warning: main.pdf not found (run 'make pdf' in report/)"
 
 # --- Copy README ---
 cp README.md "$DEST/"
