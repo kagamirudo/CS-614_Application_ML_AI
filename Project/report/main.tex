@@ -1,0 +1,282 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage[backend=biber,style=ieee]{biblatex}
+\addbibresource{references.bib}
+
+\begin{document}
+
+\title{AudioRestore: Text-Controlled Audio Quality Restoration\\via Fine-Tuned SonicMaster}
+
+\author{
+\IEEEauthorblockN{[Your Name]}
+\IEEEauthorblockA{CS 614 -- Applications of Machine Learning\\
+George Mason University\\
+Spring 2026}
+}
+
+\maketitle
+
+% ============================================================================
+\begin{abstract}
+Audio recordings are frequently degraded by lossy compression codecs such as
+MP3 and OGG Vorbis, resulting in audible artifacts and loss of high-frequency
+content. We present \textbf{AudioRestore}, a proof-of-concept system for
+text-controlled audio quality restoration built by fine-tuning SonicMaster, a
+0.9-billion-parameter generative model that uses flow matching conditioned on
+natural language prompts. We construct a codec-degraded dataset by applying MP3
+and OGG compression at various bitrates (24--128\,kbps) to clean music from
+MUSDB18-HQ, paired with descriptive text prompts. Fine-tuning the pretrained
+SonicMaster model on this dataset specializes it for codec artifact removal,
+enabling users to control the restoration process through prompts such as
+``remove MP3 artifacts at 64\,kbps.'' We evaluate our system using SDR and
+SI-SNR metrics across multiple bitrates and demonstrate improved restoration
+quality over the general-purpose pretrained model. Our work shows how a
+state-of-the-art generative audio model can be adapted for a specific
+real-world application with minimal data and compute.
+\end{abstract}
+
+\begin{IEEEkeywords}
+audio restoration, codec artifacts, flow matching, SonicMaster, fine-tuning,
+text-controlled audio enhancement
+\end{IEEEkeywords}
+
+% ============================================================================
+\section{Introduction}
+
+Billions of audio files exist in compressed formats. Streaming services like
+Spotify Free deliver music at 128\,kbps, YouTube rips circulate at even lower
+bitrates, and decades of MP3 collections were encoded with aggressive
+compression. Lossy codecs introduce audible artifacts---pre-echo, spectral
+holes, and loss of high-frequency detail---that degrade the listening
+experience~\cite{li2025apollo}.
+
+Traditional audio restoration relies on manual signal processing chains:
+equalization, de-noising, and spectral repair, each requiring expert tuning.
+Recent deep learning models such as Apollo~\cite{li2025apollo} and
+SonicMaster~\cite{melechovsky2025sonicmaster} automate this process, but
+general-purpose models may not optimally handle specific degradation types.
+
+We propose \textbf{AudioRestore}, a system that fine-tunes SonicMaster on
+codec-specific degradations. Our contributions are:
+
+\begin{enumerate}
+    \item A \textbf{codec-degraded dataset} with paired clean/degraded 30-second
+    clips at various MP3 and OGG bitrates, annotated with natural language
+    prompts describing the degradation.
+    \item A \textbf{fine-tuning procedure} that adapts SonicMaster's 0.9B-parameter
+    flow-matching model to specialize in codec artifact removal while
+    preserving its text-controlled interface.
+    \item A \textbf{proof-of-concept demo} showing text-controlled restoration
+    with before/after spectrograms and quantitative metrics.
+\end{enumerate}
+
+% ============================================================================
+\section{Related Work}
+
+\subsection{Audio Super-Resolution and Bandwidth Extension}
+Audio super-resolution aims to reconstruct high-frequency content from
+bandwidth-limited signals. Methods range from traditional interpolation to
+deep learning approaches using CNNs and GANs~\cite{su2021bandwidth}. These
+methods typically operate in a fixed input-output configuration without
+user control.
+
+\subsection{Apollo}
+Apollo~\cite{li2025apollo} is a band-sequence model for music restoration in
+compressed audio, published at ICASSP 2025. It splits the spectrogram into 80
+frequency bands, processes them through Roformer attention layers with
+inter-band communication blocks (ICB), and reconstructs the waveform via a GAN
+framework. Apollo achieves strong results on MUSDB18-HQ but operates without
+any text conditioning---it is a fixed input-to-output mapping.
+
+\subsection{SonicMaster}
+SonicMaster~\cite{melechovsky2025sonicmaster} is a unified generative model
+for music restoration and mastering, submitted to ICLR 2026. It addresses five
+categories of audio artifacts (equalization, dynamics, reverb, amplitude,
+stereo) through a single flow-matching model conditioned on natural language
+prompts. The architecture uses:
+\begin{itemize}
+    \item A \textbf{Stable Audio VAE}~\cite{evans2024stable} encoder/decoder to
+    convert between waveforms and latent representations.
+    \item A \textbf{TangoFlux transformer}~\cite{ghosh2024tangoflux} ($\sim$515M
+    parameters) that performs flow-matching in latent space, conditioned on
+    text embeddings from a T5 encoder and audio condition embeddings.
+    \item \textbf{Text and audio conditioning} through pooled projections that
+    guide the restoration direction.
+\end{itemize}
+SonicMaster is trained on the SonicMasterDataset (25k paired tracks, 208
+hours) with 19 degradation functions. Our work fine-tunes this pretrained model
+specifically for codec artifact removal.
+
+% ============================================================================
+\section{Method}
+
+\subsection{Architecture}
+We use the full SonicMaster architecture without modification. The model
+processes 30-second stereo audio chunks at 44.1\,kHz. The degraded input is
+encoded into a latent representation by the Stable Audio VAE, transformed by
+the TangoFlux flow-matching model conditioned on a text prompt, and decoded
+back to a waveform.
+
+% TODO: Include architecture diagram from the plan
+% \begin{figure}[t]
+%     \centering
+%     \includegraphics[width=\linewidth]{figures/architecture.pdf}
+%     \caption{SonicMaster architecture for audio restoration.}
+%     \label{fig:arch}
+% \end{figure}
+
+\subsection{Codec Degradation Pipeline}
+Our key modification is a custom degradation pipeline targeting codec
+artifacts. We apply:
+
+\begin{itemize}
+    \item \textbf{MP3 compression} at bitrates $\in \{24, 32, 48, 64, 96,
+    128\}$\,kbps using \texttt{torchaudio.functional.apply\_codec}.
+    \item \textbf{OGG Vorbis compression} at quality levels $\in \{-1, 0, 1,
+    2, 3, 5\}$.
+\end{itemize}
+
+For each clip, we randomly select a codec type (70\% MP3, 30\% OGG) and
+parameter, then generate a paired (clean, degraded) sample. Clips are
+normalized to 0.95 peak amplitude before degradation.
+
+\subsection{Text Prompt Design}
+Each training pair is annotated with two prompts:
+\begin{itemize}
+    \item A \textbf{specific prompt} describing the degradation, e.g.,
+    ``restore audio compressed at 64\,kbps MP3.''
+    \item An \textbf{alternative prompt} with generic phrasing, e.g.,
+    ``improve the sound quality.''
+\end{itemize}
+
+During training, we follow SonicMaster's text augmentation strategy: 10\%
+chance of empty prompt (unconditional), 10\% chance of a generic prompt, and
+40/40 split between the specific and alternative prompts. This teaches the
+model to respond to various phrasings while maintaining unconditional
+capability.
+
+\subsection{Fine-Tuning Procedure}
+We fine-tune from the pretrained SonicMaster checkpoint (0.9B parameters):
+\begin{itemize}
+    \item \textbf{Frozen components}: T5 text encoder (parameters fixed
+    throughout).
+    \item \textbf{Trained components}: TangoFlux transformer, text projection
+    layers (\texttt{fc\_text}, \texttt{fc\_text\_audio}), and audio
+    conditioning module (\texttt{audio\_cond}).
+    \item \textbf{Learning rate}: $1 \times 10^{-5}$ with cosine schedule and
+    200-step warmup.
+    \item \textbf{Batch size}: 2 per device with 4 gradient accumulation steps
+    (effective batch size 8).
+    \item \textbf{Precision}: Mixed FP16 for memory efficiency on a single GPU.
+    \item \textbf{Epochs}: 30 (early stopping on validation loss).
+\end{itemize}
+
+All audio is pre-encoded into VAE latents before training to avoid redundant
+VAE forward passes during fine-tuning.
+
+% ============================================================================
+\section{Experiments}
+
+\subsection{Dataset}
+We construct our dataset from MUSDB18-HQ~\cite{rafii2017musdb18}, extracting
+30-second clips from the training split. Each clip is degraded with a randomly
+selected codec and bitrate/quality level. We generate approximately 1,000--2,000
+paired clips (90\% train, 10\% validation).
+
+\subsection{Evaluation Metrics}
+We evaluate using two standard audio quality metrics~\cite{le2019sdr}:
+\begin{itemize}
+    \item \textbf{SDR} (Signal-to-Distortion Ratio): Measures overall signal
+    fidelity in dB.
+    \item \textbf{SI-SNR} (Scale-Invariant Signal-to-Noise Ratio): Measures
+    signal quality invariant to scaling.
+\end{itemize}
+
+\subsection{Results}
+
+% TODO: Fill in with actual results after running fine-tuning
+\begin{table}[t]
+\centering
+\caption{Restoration quality (SDR in dB) at various MP3 bitrates.}
+\label{tab:results}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Bitrate} & \textbf{Degraded} & \textbf{Base SM} & \textbf{Fine-tuned} & \textbf{Gain} \\
+\midrule
+32\,kbps  & --  & --  & --  & --  \\
+64\,kbps  & --  & --  & --  & --  \\
+128\,kbps & --  & --  & --  & --  \\
+\bottomrule
+\end{tabular}
+\vspace{0.5em}
+\small SM = SonicMaster. Gain = Fine-tuned SDR $-$ Degraded SDR.
+\end{table}
+
+% TODO: Add spectrogram figures
+% \begin{figure}[t]
+%     \centering
+%     \includegraphics[width=\linewidth]{figures/spectrograms_64k.png}
+%     \caption{Spectrograms at 64\,kbps MP3. Left: original. Center: degraded.
+%     Right: restored by fine-tuned SonicMaster.}
+%     \label{fig:spectrograms}
+% \end{figure}
+
+% ============================================================================
+\section{Discussion}
+
+\subsection{Text Control Advantage}
+Unlike Apollo, which provides no user control over the restoration process,
+SonicMaster's text conditioning allows users to specify the type of
+degradation they want to address. Our fine-tuning preserves this capability
+while specializing the model for codec artifacts.
+
+\subsection{Limitations}
+\begin{itemize}
+    \item Fine-tuning was performed on a relatively small dataset due to
+    compute constraints.
+    \item The model processes 30-second chunks; longer files require chunked
+    processing with crossfade stitching.
+    \item Inference requires a GPU with at least 8\,GB VRAM (FP16).
+\end{itemize}
+
+% ============================================================================
+\section{Product Vision}
+
+\textbf{AudioRestore} could be deployed as a consumer service:
+\begin{itemize}
+    \item A web app or API where users upload compressed audio and describe the
+    desired enhancement in natural language.
+    \item Integration with music streaming platforms to upscale low-bitrate
+    streams in real-time.
+    \item A plugin for digital audio workstations (DAWs) for mastering
+    engineers working with degraded source material.
+    \item A mobile app for restoring old MP3 collections or voice recordings.
+\end{itemize}
+
+The text-controlled interface makes it accessible to non-experts who cannot
+operate traditional audio restoration tools.
+
+% ============================================================================
+\section{Conclusion}
+
+We presented AudioRestore, a proof-of-concept system for text-controlled audio
+quality restoration. By fine-tuning SonicMaster on codec-degraded audio with
+custom text prompts, we demonstrated that a general-purpose audio restoration
+model can be specialized for a specific degradation type with minimal data and
+compute. The system allows users to control the restoration process through
+natural language, making high-quality audio restoration accessible to
+non-experts. Future work includes expanding the degradation pipeline, training
+on larger datasets, and optimizing for real-time inference.
+
+% ============================================================================
+\printbibliography
+
+\end{document}

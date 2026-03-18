@@ -1,0 +1,27 @@
+paths:
+  train_file: "data/trainset.jsonl"
+  val_file: "data/valset.jsonl"
+  test_file: "data/valset.jsonl"
+  infer_file: "data/valset.jsonl"
+  resume_from_checkpoint: ""
+  output_dir: "outputs/finetune_codec"
+
+training:
+  per_device_batch_size: 2
+  learning_rate: 1e-5
+  gradient_accumulation_steps: 4
+  num_train_epochs: 30
+  num_warmup_steps: 200
+  max_audio_duration: 30
+
+model:
+  num_layers: 6
+  num_single_layers: 18
+  in_channels: 64
+  attention_head_dim: 128
+  joint_attention_dim: 1024
+  num_attention_heads: 8
+  audio_seq_len: 645
+  max_duration: 30
+  uncondition: false
+  text_encoder_name: "google/flan-t5-large"
