@@ -1,3 +1,7 @@
+---
+marp: true
+---
+
 # AudioRestore: Text-Controlled Audio Quality Restoration via Fine-Tuned SonicMaster
 
 **CS 614 -- Applications of Machine Learning -- Final Project**
